@@ -1,13 +1,19 @@
 ﻿#include "Class.h"
 #include "VehicleTypes.h"
+#include <memory>
+
 // 小轿车类构造函数实现
 Sedan::Sedan(int lane, int carlength, int carwidth, int x, int y, int speed)
-    : Vehicle(lane, carlength, carwidth, x, y, speed) {}
+    : Vehicle(lane, carlength, carwidth, x, y, speed)
+{
+    // 设置小轿车颜色为蓝色
+    color = RGB(100, 150, 255);
+    originalColor = color;
+}
 
-bool Sedan::smoothLaneChange(int laneHeight, const std::vector<Vehicle> &allVehicles)
+bool Sedan::smoothLaneChange(int laneHeight, const std::vector<std::unique_ptr<Vehicle>> &allVehicles)
 {
     // 实现更快的变道曲线
-    // 可根据需要自定义变道逻辑
     changeProgress += 0.08f; // 小轿车变道更快
     if (changeProgress >= 1.0f)
     {
@@ -89,9 +95,14 @@ void Sedan::draw() const
 
 // SUV类实现
 SUV::SUV(int lane, int carlength, int carwidth, int x, int y, int speed)
-    : Vehicle(lane, carlength, carwidth, x, y, speed) {}
+    : Vehicle(lane, carlength, carwidth, x, y, speed)
+{
+    // 设置SUV颜色为红色
+    color = RGB(220, 80, 80);
+    originalColor = color;
+}
 
-bool SUV::smoothLaneChange(int laneHeight, const std::vector<Vehicle> &allVehicles)
+bool SUV::smoothLaneChange(int laneHeight, const std::vector<std::unique_ptr<Vehicle>> &allVehicles)
 {
     // SUV变道速度适中
     changeProgress += 0.05f;
@@ -175,9 +186,14 @@ void SUV::draw() const
 
 // 大卡车类实现
 Truck::Truck(int lane, int carlength, int carwidth, int x, int y, int speed)
-    : Vehicle(lane, carlength, carwidth, x, y, speed) {}
+    : Vehicle(lane, carlength, carwidth, x, y, speed)
+{
+    // 设置卡车颜色为绿色
+    color = RGB(100, 200, 100);
+    originalColor = color;
+}
 
-bool Truck::smoothLaneChange(int laneHeight, const std::vector<Vehicle> &allVehicles)
+bool Truck::smoothLaneChange(int laneHeight, const std::vector<std::unique_ptr<Vehicle>> &allVehicles)
 {
     // 卡车变道更慢
     changeProgress += 0.03f;
