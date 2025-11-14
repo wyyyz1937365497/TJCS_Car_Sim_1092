@@ -14,18 +14,8 @@
 using namespace std;
 
 // 函数声明：清除指定车道的所有车辆
-void clearLane(vector<Vehicle> &vehicles, int lane)
-{
-    vehicles.erase(remove_if(vehicles.begin(), vehicles.end(),
-                             [lane](const Vehicle &v)
-                             {
-                                 return v.lane == lane;
-                             }),
-                   vehicles.end());
-}
 int main()
 {
-
     Bridge bridge;
     // 输入桥梁参数
     // cout << "请输入桥长（m）: ";

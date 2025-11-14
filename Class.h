@@ -8,11 +8,13 @@
 #include <iostream>
 #include "Define.h"
 using namespace std;
+// 车辆类型枚举
 enum class VehicleType {
-    SEDAN,
-    SUV,
-    TRUCK
+    SEDAN,  // 小轿车
+    SUV,    // SUV
+    TRUCK   // 大卡车
 };
+
 
 // 定义车辆的类
 struct Vehicle
@@ -45,7 +47,7 @@ Vehicle(int l = 0, int cl = 0, int cw = 0, int x = 0, int y = 0, int s = 0, bool
 
     // 抛锚状态
     bool isBrokenDown; // 车辆是否抛锚
-    void draw() const;
+    virtual void draw() const;
     // 预测并绘制轨迹
     void predictAndDrawTrajectory(int laneHeight, int middleY, int predictionSteps = 30, const vector<Vehicle> &allVehicles = vector<Vehicle>()) const;
 
@@ -68,7 +70,6 @@ Vehicle(int l = 0, int cl = 0, int cw = 0, int x = 0, int y = 0, int s = 0, bool
     virtual bool smoothLaneChange(int laneHeight, const vector<Vehicle> &allVehicles);
     // 获取安全距离（可被子类重写）
     virtual int getSafeDistance() const { return SAFE_DISTANCE; }
-
 };
 
 // 虚拟车辆类，用于轨迹预测和相交检测
@@ -101,31 +102,6 @@ struct Bridge
     // 根据屏幕分辨率调整窗口大小
     void calculateWindowSize(int &windowWidth, int &windowHeight, double &scale) const;
 };
-// 小轿车类
-struct Sedan : public Vehicle {
-    Sedan(int lane, int carlength, int carwidth, int x, int y, int speed);
-    // 重写变道函数，实现更快的变道曲线
-    bool smoothLaneChange(int laneHeight, const vector<Vehicle> &allVehicles) override;
-    // 获取小轿车的安全距离
-    int getSafeDistance() const override;
-};
-
-// SUV类
-struct SUV : public Vehicle {
-    SUV(int lane, int carlength, int carwidth, int x, int y, int speed);
-    // 重写变道函数，实现中等的变道曲线
-    bool smoothLaneChange(int laneHeight, const vector<Vehicle> &allVehicles) override;
-    // 获取SUV的安全距离
-    int getSafeDistance() const override;
-};
-
-// 大卡车类
-struct Truck : public Vehicle {
-    Truck(int lane, int carlength, int carwidth, int x, int y, int speed);
-    // 重写变道函数，实现更慢的变道曲线
-    bool smoothLaneChange(int laneHeight, const vector<Vehicle> &allVehicles) override;
-    // 获取大卡车的安全距离
-    int getSafeDistance() const override;
-};
+void clearLane(vector<Vehicle>& vehicles, int lane);
 
 #pragma once

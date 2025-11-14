@@ -1,323 +1,260 @@
-#include "Class.h"
-#include "Define.h"
-#include "Random.h"
-#include <cmath>
-
-// 小轿车类实现
+﻿#include "Class.h"
+#include "VehicleTypes.h"
+// 小轿车类构造函数实现
 Sedan::Sedan(int lane, int carlength, int carwidth, int x, int y, int speed)
-    : Vehicle()
+    : Vehicle(lane, carlength, carwidth, x, y, speed) {}
+
+bool Sedan::smoothLaneChange(int laneHeight, const std::vector<Vehicle> &allVehicles)
 {
-    this->lane = lane;
-    this->carlength = carlength;
-    this->carwidth = carwidth;
-    this->x = x;
-    this->y = y;
-    // 小轿车速度范围：80-150
-    this->speed = 80 + rand() % 71;
-    this->haschanged = false;
-    this->color = RGB(rand() % 256, rand() % 256, rand() % 256);
-    this->isChangingLane = false;
-    this->isGoing2change = false;
-    this->targetLane = 0;
-    this->changeProgress = 0.0f;
-    this->startX = 0;
-    this->startY = 0;
-    this->endX = 0;
-    this->endY = 0;
-    this->isTooClose = false;
-    this->originalColor = this->color;
-    this->isBrokenDown = false;
+    // 实现更快的变道曲线
+    // 可根据需要自定义变道逻辑
+    changeProgress += 0.08f; // 小轿车变道更快
+    if (changeProgress >= 1.0f)
+    {
+        y = endY;
+        isChangingLane = false;
+        return true;
+    }
+    y = static_cast<int>(startY + (endY - startY) * changeProgress);
+    return false;
+}
+
+int Sedan::getSafeDistance() const
+{
+    // 小轿车安全距离
+    return SAFE_DISTANCE * 0.8;  // 比标准安全距离短20%
+}
+
+// 小轿车绘制函数
+void Sedan::draw() const
+{
+    int left = x - carlength / 2;
+    int right = x + carlength / 2;
+    int top = y - carwidth / 2;
+    int bottom = y + carwidth / 2;
+
+    if (isBrokenDown)
+    {
+        // 抛锚车辆：灰色+红色X
+        setfillcolor(RGB(100, 100, 100));
+        setlinecolor(RGB(50, 50, 50));
+        fillroundrect(left, top, right, bottom, 8, 8);
+
+        setlinecolor(RED);
+        setlinestyle(PS_SOLID, 3);
+        line(x - carlength / 4, y - carwidth / 4, x + carlength / 4, y + carwidth / 4);
+        line(x - carlength / 4, y + carwidth / 4, x + carlength / 4, y - carwidth / 4);
+        setlinestyle(PS_SOLID, 1);
+    }
+    else
+    {
+        // 小轿车
+        // 车身 + 阴影
+        setfillcolor(RGB(50, 50, 50));
+        fillroundrect(left + 2, top + 2, right + 2, bottom + 2, 6, 6);
+        setfillcolor(color);
+        setlinecolor(RGB(30, 30, 30));
+        setlinestyle(PS_SOLID, 2);
+        fillroundrect(left, top, right, bottom, 6, 6);
+        // 前后窗
+        setfillcolor(RGB(150, 200, 230));
+        setlinecolor(RGB(80, 80, 80));
+        int wm = carlength / 8, wh = carwidth / 3;
+        fillrectangle(right - wm - carlength/6, top + wh, right - wm, bottom - wh);
+        fillrectangle(left + wm, top + wh, left + wm + carlength/6, bottom - wh);
+        // 车轮
+        setfillcolor(BLACK);
+        int wr = max(2, carwidth / 5), wo = max(4, carlength / 4);
+        fillcircle(right - wo, top, wr);
+        fillcircle(left + wo, top, wr);
+        fillcircle(right - wo, bottom, wr);
+        fillcircle(left + wo, bottom, wr);
+        // 轮毂
+        setfillcolor(RGB(180, 180, 180));
+        int hr = max(1, wr / 2);
+        fillcircle(right - wo, top, hr);
+        fillcircle(left + wo, top, hr);
+        fillcircle(right - wo, bottom, hr);
+        fillcircle(left + wo, bottom, hr);
+    }
+
+    // 在车辆上方显示速度
+    wchar_t speedText[16];
+    swprintf(speedText,16, L"%d", speed);
+    setbkmode(TRANSPARENT);
+    settextcolor(WHITE);
+    settextstyle(20, 0, L"Arial");
+    outtextxy(x - 10, y - carwidth / 2 - 25, speedText);
 }
 
 // SUV类实现
 SUV::SUV(int lane, int carlength, int carwidth, int x, int y, int speed)
-    : Vehicle()
+    : Vehicle(lane, carlength, carwidth, x, y, speed) {}
+
+bool SUV::smoothLaneChange(int laneHeight, const std::vector<Vehicle> &allVehicles)
 {
-    this->lane = lane;
-    this->carlength = carlength;
-    this->carwidth = carwidth;
-    this->x = x;
-    this->y = y;
-    // SUV速度范围：60-140
-    this->speed = 60 + rand() % 81;
-    this->haschanged = false;
-    this->color = RGB(rand() % 256, rand() % 256, rand() % 256);
-    this->isChangingLane = false;
-    this->isGoing2change = false;
-    this->targetLane = 0;
-    this->changeProgress = 0.0f;
-    this->startX = 0;
-    this->startY = 0;
-    this->endX = 0;
-    this->endY = 0;
-    this->isTooClose = false;
-    this->originalColor = this->color;
-    this->isBrokenDown = false;
+    // SUV变道速度适中
+    changeProgress += 0.05f;
+    if (changeProgress >= 1.0f)
+    {
+        y = endY;
+        isChangingLane = false;
+        return true;
+    }
+    y = static_cast<int>(startY + (endY - startY) * changeProgress);
+    return false;
+}
+
+int SUV::getSafeDistance() const
+{
+    // SUV安全距离
+    return SAFE_DISTANCE;  // 使用标准安全距离
+}
+
+// SUV绘制函数
+void SUV::draw() const
+{
+    int left = x - carlength / 2;
+    int right = x + carlength / 2;
+    int top = y - carwidth / 2;
+    int bottom = y + carwidth / 2;
+
+    if (isBrokenDown)
+    {
+        // 抛锚车辆：灰色+红色X
+        setfillcolor(RGB(100, 100, 100));
+        setlinecolor(RGB(50, 50, 50));
+        fillroundrect(left, top, right, bottom, 8, 8);
+
+        setlinecolor(RED);
+        setlinestyle(PS_SOLID, 3);
+        line(x - carlength / 4, y - carwidth / 4, x + carlength / 4, y + carwidth / 4);
+        line(x - carlength / 4, y + carwidth / 4, x + carlength / 4, y - carwidth / 4);
+        setlinestyle(PS_SOLID, 1);
+    }
+    else
+    {
+        // SUV
+        // 车身（更高更长）
+        setfillcolor(color);
+        setlinecolor(RGB(30, 30, 30));
+        fillroundrect(left, top, right, bottom, 8, 8);
+        // 侧窗带
+        setfillcolor(RGB(180, 220, 240));
+        int bandTop = top + carwidth / 5;
+        int bandBot = bottom - carwidth / 5;
+        fillrectangle(left + carlength/10, bandTop, right - carlength/10, bandBot);
+        // 分隔窗格
+        setlinecolor(RGB(120, 120, 120));
+        int windows = max(4, carlength / 40);
+        for (int i = 1; i < windows; ++i)
+        {
+            int wx = left + carlength/10 + i * (right - left - carlength/5) / windows;
+            line(wx, bandTop, wx, bandBot);
+        }
+        // 车轮（较大）
+        setfillcolor(BLACK);
+        int wr = max(3, carwidth / 4);
+        int w1x = left + carlength / 5;
+        int w2x = right - carlength / 5;
+        fillcircle(w1x, bottom, wr);
+        fillcircle(w2x, bottom, wr);
+        setfillcolor(RGB(180, 180, 180));
+        fillcircle(w1x, bottom, wr/2);
+        fillcircle(w2x, bottom, wr/2);
+    }
+
+    // 在车辆上方显示速度
+    wchar_t speedText[16];
+    swprintf(speedText,16, L"%d", speed);
+    setbkmode(TRANSPARENT);
+    settextcolor(WHITE);
+    settextstyle(20, 0, L"Arial");
+    outtextxy(x - 10, y - carwidth / 2 - 25, speedText);
 }
 
 // 大卡车类实现
 Truck::Truck(int lane, int carlength, int carwidth, int x, int y, int speed)
-    : Vehicle()
+    : Vehicle(lane, carlength, carwidth, x, y, speed) {}
+
+bool Truck::smoothLaneChange(int laneHeight, const std::vector<Vehicle> &allVehicles)
 {
-    this->lane = lane;
-    this->carlength = carlength;
-    this->carwidth = carwidth;
-    this->x = x;
-    this->y = y;
-    // 大卡车速度范围：50-100
-    this->speed = 50 + rand() % 51;
-    this->haschanged = false;
-    this->color = RGB(rand() % 256, rand() % 256, rand() % 256);
-    this->isChangingLane = false;
-    this->isGoing2change = false;
-    this->targetLane = 0;
-    this->changeProgress = 0.0f;
-    this->startX = 0;
-    this->startY = 0;
-    this->endX = 0;
-    this->endY = 0;
-    this->isTooClose = false;
-    this->originalColor = this->color;
-    this->isBrokenDown = false;
-    // 大卡车尺寸更大
-    this->carlength = (int)(carlength * 1.5);
-    this->carwidth = (int)(carwidth * 1.3);
-}
-
-// 获取小轿车的安全距离 - 最短
-int Sedan::getSafeDistance() const
-{
-    return SAFE_DISTANCE * 0.8; // 比标准安全距离短20%
-}
-
-// 获取SUV的安全距离 - 中等
-int SUV::getSafeDistance() const
-{
-    return SAFE_DISTANCE; // 使用标准安全距离
-}
-
-// 获取大卡车的安全距离 - 最远
-int Truck::getSafeDistance() const
-{
-    return SAFE_DISTANCE * 1.5; // 比标准安全距离长50%
-}
-
-// 内联函数：计算变道垂直速度
-inline float calculateVerticalSpeed(float progress, VehicleType type)
-{
-    float t = progress;
-    switch (type)
+    // 卡车变道更慢
+    changeProgress += 0.03f;
+    if (changeProgress >= 1.0f)
     {
-    case VehicleType::SEDAN: // 小轿车 - 变道最快，使用更陡峭的曲线
-        return 6 * t - 6 * t * t;
-    case VehicleType::SUV: // SUV - 变道速度中等，使用中等陡峭度的曲线
-        return 4.5 * t * t - 3.5 * t * t * t;
-    case VehicleType::TRUCK: // 大卡车 - 变道最慢，使用更平缓的曲线
-        return 2 * t * t - t * t * t;
-    default:
-        return 3 * t * t - 2 * t * t * t; // 默认使用基类的曲线
+        y = endY;
+        isChangingLane = false;
+        return true;
     }
-}
-
-// 内联函数：获取变道进度增量
-inline float getChangeProgressIncrement(VehicleType type)
-{
-    switch (type)
-    {
-    case VehicleType::SEDAN: // 小轿车 - 变道最快
-        return 0.04f;        // 比基类快一倍
-    case VehicleType::SUV:   // SUV - 变道速度中等
-        return 0.03f;        // 比基类稍快
-    case VehicleType::TRUCK: // 大卡车 - 变道最慢
-        return 0.01f;        // 比基类慢一半
-    default:
-        return 0.02f; // 默认使用基类的进度增量
-    }
-}
-
-// 内联函数：获取预测步数
-inline int getPredictionSteps(VehicleType type)
-{
-    switch (type)
-    {
-    case VehicleType::SEDAN: // 小轿车 - 变道最快，需要更少的步数
-        return 15;
-    case VehicleType::SUV: // SUV - 变道速度中等，需要中等数量的步数
-        return 25;
-    case VehicleType::TRUCK: // 大卡车 - 变道最慢，需要更多的步数
-        return 50;
-    default:
-        return 30; // 默认使用基类的步数
-    }
-}
-
-// 通用变道函数，使用内联函数处理不同类型的车辆
-bool performSmoothLaneChange(Vehicle &vehicle, int laneHeight, const vector<Vehicle> &allVehicles, VehicleType type)
-{
-    // 如果车辆已抛锚，不能变道
-    if (vehicle.isBrokenDown)
-    {
-        return false;
-    }
-
-    if (vehicle.isChangingLane)
-    {
-        // 更新变道进度 - 使用车辆类型特定的进度增量
-        vehicle.changeProgress += getChangeProgressIncrement(type);
-
-        if (vehicle.changeProgress >= 1.0f)
-        {
-            // 变道完成
-            vehicle.changeProgress = 1.0f;
-            vehicle.isChangingLane = false;
-            vehicle.isGoing2change = false;
-            vehicle.lane = vehicle.targetLane;
-            vehicle.speed = vehicle.speed * 2; // 恢复速度
-            return true;
-        }
-
-        // 使用车辆类型特定的垂直速度函数计算垂直方向速度
-        float verticalSpeed = calculateVerticalSpeed(vehicle.changeProgress, type);
-
-        // 计算垂直方向上的位置变化
-        float deltaY = (vehicle.endY - vehicle.startY) * verticalSpeed;
-        vehicle.y = vehicle.startY + (int)deltaY;
-
-        return false;
-    }
-
-    // 确定目标车道
-    int tempTargetLane = 0;
-    if (vehicle.lane == 0 || vehicle.lane == 3)
-    {
-        tempTargetLane = vehicle.lane + 1;
-    }
-    else if (vehicle.lane == 2 || vehicle.lane == 5)
-    {
-        tempTargetLane = vehicle.lane - 1;
-    }
-    else if (vehicle.lane == 1 || vehicle.lane == 4)
-    {
-        tempTargetLane = vehicle.lane + (rand() % 2 ? 1 : -1);
-    }
-
-    // 创建虚拟车辆用于轨迹预测
-    VirtualVehicle virtualCar(vehicle.x, vehicle.y, vehicle.carlength, vehicle.carwidth);
-
-    // 添加当前位置
-    virtualCar.addTrajectoryPoint(vehicle.x, vehicle.y);
-
-    // 预测变道轨迹
-    int currentX = vehicle.x;
-    int currentY = vehicle.y;
-    int targetY = laneHeight * tempTargetLane + (int)(0.5 * laneHeight);
-    int currentSpeed = (vehicle.y < laneHeight * 3) ? vehicle.speed : -vehicle.speed;
-
-    // 获取车辆类型特定的预测步数
-    int predictionSteps = getPredictionSteps(type);
-
-    // 预测变道轨迹
-    for (int i = 1; i <= predictionSteps; ++i)
-    {
-        // 计算进度
-        float t = min(1.0f, i * getChangeProgressIncrement(type));
-
-        // 计算垂直位置 - 使用车辆类型特定的垂直速度函数
-        float verticalSpeed = calculateVerticalSpeed(t, type);
-        float deltaY = (targetY - currentY) * verticalSpeed;
-        int newY = currentY + (int)deltaY;
-
-        // 计算水平位置（保持原有速度）
-        int newX = currentX + i * currentSpeed;
-
-        // 添加到轨迹
-        virtualCar.addTrajectoryPoint(newX, newY);
-    }
-
-    // 检查与其他车辆的轨迹是否相交
-    for (const auto &other : allVehicles)
-    {
-        if (&other == &vehicle)
-            continue; // 跳过自己
-
-        // 为其他车辆创建虚拟车辆
-        VirtualVehicle otherVirtual(other.x, other.y, other.carlength, other.carwidth);
-
-        // 判断其他车辆是否在变道中
-        if (other.isChangingLane)
-        {
-            // 如果其他车辆也在变道，预测其变道轨迹
-            float otherProgress = other.changeProgress;
-            int otherStartX = other.startX;
-            int otherStartY = other.startY;
-            int otherEndX = other.endX;
-            int otherEndY = other.endY;
-            int otherSpeed = (other.y < laneHeight * 3) ? other.speed : -other.speed;
-
-            // 预测其他车辆的变道轨迹
-            for (int i = 1; i <= predictionSteps; ++i)
-            {
-                // 更新进度
-                float t = min(1.0f, otherProgress + i * 0.02f);
-
-                // 计算垂直位置
-                float verticalSpeed = 3 * t * t - 2 * t * t * t;
-                float deltaY = (otherEndY - otherStartY) * verticalSpeed;
-                int newY = otherStartY + (int)deltaY;
-
-                // 计算水平位置（保持原有速度）
-                int newX = other.x + i * otherSpeed;
-
-                // 添加到轨迹
-                otherVirtual.addTrajectoryPoint(newX, newY);
-            }
-        }
-        else
-        {
-            // 其他车辆直线行驶，预测其直线轨迹
-            int otherSpeed = (other.y < laneHeight * 3) ? other.speed : -other.speed;
-            for (int i = 1; i <= predictionSteps; ++i)
-            {
-                int newX = other.x + i * otherSpeed;
-                otherVirtual.addTrajectoryPoint(newX, other.y);
-            }
-        }
-
-        // 检查轨迹是否相交
-        if (virtualCar.isTrajectoryIntersecting(otherVirtual, predictionSteps))
-        {
-            vehicle.isGoing2change = false; // 取消准备变道状态
-            return false;                   // 轨迹相交，变道不安全，取消变道
-        }
-    }
-
-    // 变道安全，设置目标车道和变道参数
-    vehicle.targetLane = tempTargetLane;
-    vehicle.startX = vehicle.x;
-    vehicle.startY = vehicle.y;
-    vehicle.endX = vehicle.x + 25; // 向前移动50像素
-    vehicle.endY = laneHeight * vehicle.targetLane + (int)(0.5 * laneHeight);
-
-    // 开始变道
-    vehicle.isChangingLane = true;
-    vehicle.changeProgress = 0.0f;
+    y = static_cast<int>(startY + (endY - startY) * changeProgress);
     return false;
 }
 
-// 小轿车变道函数
-bool Sedan::smoothLaneChange(int laneHeight, const vector<Vehicle> &allVehicles)
+int Truck::getSafeDistance() const
 {
-    return performSmoothLaneChange(*this, laneHeight, allVehicles, VehicleType::SEDAN);
+    // 卡车安全距离
+    return SAFE_DISTANCE * 1.5;  // 比标准安全距离长50%
 }
 
-// SUV变道函数
-bool SUV::smoothLaneChange(int laneHeight, const vector<Vehicle> &allVehicles)
+// 大卡车绘制函数
+void Truck::draw() const
 {
-    return performSmoothLaneChange(*this, laneHeight, allVehicles, VehicleType::SUV);
-}
+    int left = x - carlength / 2;
+    int right = x + carlength / 2;
+    int top = y - carwidth / 2;
+    int bottom = y + carwidth / 2;
 
-// 大卡车变道函数
-bool Truck::smoothLaneChange(int laneHeight, const vector<Vehicle> &allVehicles)
-{
-    return performSmoothLaneChange(*this, laneHeight, allVehicles, VehicleType::TRUCK);
+    if (isBrokenDown)
+    {
+        // 抛锚车辆：灰色+红色X
+        setfillcolor(RGB(100, 100, 100));
+        setlinecolor(RGB(50, 50, 50));
+        fillroundrect(left, top, right, bottom, 8, 8);
+
+        setlinecolor(RED);
+        setlinestyle(PS_SOLID, 3);
+        line(x - carlength / 4, y - carwidth / 4, x + carlength / 4, y + carwidth / 4);
+        line(x - carlength / 4, y + carwidth / 4, x + carlength / 4, y - carwidth / 4);
+        setlinestyle(PS_SOLID, 1);
+    }
+    else
+    {
+        // 大卡车
+        // 拖挂 + 车头
+        int cabLen = max(10, carlength / 4);
+        int trailerLeft = left;
+        int trailerRight = right - cabLen;
+        // 货厢
+        setfillcolor(color);
+        setlinecolor(RGB(30, 30, 30));
+        fillrectangle(trailerLeft, top, trailerRight, bottom);
+        // 车头
+        setfillcolor(RGB(200, 200, 200));
+        fillroundrect(trailerRight, top, right, bottom, 6, 6);
+        // 货厢竖筋
+        setlinecolor(RGB(100, 100, 100));
+        int ribs = max(3, (trailerRight - trailerLeft) / 30);
+        for (int i = 1; i < ribs; ++i)
+        {
+            int rx = trailerLeft + i * (trailerRight - trailerLeft) / ribs;
+            line(rx, top, rx, bottom);
+        }
+        // 车轮（多轴）
+        setfillcolor(BLACK);
+        int wr = max(3, carwidth / 4);
+        int ax1 = trailerLeft + (trailerRight - trailerLeft) * 2 / 3;
+        int ax2 = trailerLeft + (trailerRight - trailerLeft) * 4 / 5;
+        fillcircle(ax1, bottom, wr);
+        fillcircle(ax2, bottom, wr);
+        fillcircle(right - cabLen/2, bottom, wr - 1);
+    }
+
+    // 在车辆上方显示速度
+    wchar_t speedText[16];
+    swprintf(speedText,16, L"%d", speed);
+    setbkmode(TRANSPARENT);
+    settextcolor(WHITE);
+    settextstyle(20, 0, L"Arial");
+    outtextxy(x - 10, y - carwidth / 2 - 25, speedText);
 }

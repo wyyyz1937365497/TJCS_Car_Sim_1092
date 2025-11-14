@@ -1,4 +1,4 @@
-#include <graphics.h>
+﻿#include <graphics.h>
 #include <vector>
 #include <ctime>
 #include <conio.h> // 需要包含此头文件_kbhit()函数需要
@@ -10,6 +10,15 @@
 #include "Random.h"
 #include "Class.h"
 using namespace std;
+void clearLane(vector<Vehicle>& vehicles, int lane)
+{
+    vehicles.erase(remove_if(vehicles.begin(), vehicles.end(),
+        [lane](const Vehicle& v)
+        {
+            return v.lane == lane;
+        }),
+        vehicles.end());
+}
 
 // 绘制虚线
 void drawDashedLine(int x1, int y1, int x2, int y2)
@@ -114,34 +123,39 @@ void Bridge::calculateWindowSize(int &windowWidth, int &windowHeight, double &sc
 
     initgraph(windowWidth, windowHeight);
 }
-    void Vehicle::draw() const
+void Vehicle::draw() const
+{
+    int left = x - carlength / 2;
+    int right = x + carlength / 2;
+    int top = y - carwidth / 2;
+    int bottom = y + carwidth / 2;
+
+    if (isBrokenDown)
     {
-        if (isBrokenDown)
-        {
-            // 抛锚车辆：灰色+红色X
-            setfillcolor(RGB(100, 100, 100));
-            setlinecolor(RGB(50, 50, 50));
-            fillroundrect(x - carlength / 2, y - carwidth / 2, x + carlength / 2, y + carwidth / 2, 8, 8);
+        // 抛锚车辆：灰色+红色X
+        setfillcolor(RGB(100, 100, 100));
+        setlinecolor(RGB(50, 50, 50));
+        fillroundrect(left, top, right, bottom, 8, 8);
 
-            setlinecolor(RED);
-            setlinestyle(PS_SOLID, 3);
-            line(x - carlength / 4, y - carwidth / 4, x + carlength / 4, y + carwidth / 4);
-            line(x - carlength / 4, y + carwidth / 4, x + carlength / 4, y - carwidth / 4);
-            setlinestyle(PS_SOLID, 1);
-        }
-        else
-        {
-            // 正常车辆
-            setfillcolor(color); // 设置填充颜色
-            setlinecolor(color); // 让边框也是同色
-            fillrectangle(x - carlength / 2, y - carwidth / 2, x + carlength / 2, y + carwidth / 2);
-        }
-
-        // 在车辆上方显示速度
-        wchar_t speedText[16];
-        swprintf(speedText,16, L"%d", speed);
-        setbkmode(TRANSPARENT);
-        settextcolor(WHITE);
-        settextstyle(20, 0, L"Arial");
-        outtextxy(x - 10, y - carwidth / 2 - 25, speedText);
+        setlinecolor(RED);
+        setlinestyle(PS_SOLID, 3);
+        line(x - carlength / 4, y - carwidth / 4, x + carlength / 4, y + carwidth / 4);
+        line(x - carlength / 4, y + carwidth / 4, x + carlength / 4, y - carwidth / 4);
+        setlinestyle(PS_SOLID, 1);
     }
+    else
+    {
+        // 默认车辆（基类Vehicle）
+        setfillcolor(color); // 设置填充颜色
+        setlinecolor(color); // 让边框也是同色
+        fillrectangle(left, top, right, bottom);
+    }
+
+    // 在车辆上方显示速度
+    wchar_t speedText[16];
+    swprintf(speedText, 16, L"%d", speed);
+    setbkmode(TRANSPARENT);
+    settextcolor(WHITE);
+    settextstyle(20, 0, L"Arial");
+    outtextxy(x - 10, y - carwidth / 2 - 25, speedText);
+}

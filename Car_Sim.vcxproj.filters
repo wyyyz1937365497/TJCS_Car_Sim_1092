@@ -24,6 +24,9 @@
     <ClCompile Include="Function.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="VehicleTypes.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Class.h">
@@ -33,6 +36,9 @@
       <Filter>源文件</Filter>
     </ClInclude>
     <ClInclude Include="Define.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="VehicleTypes.h">
       <Filter>源文件</Filter>
     </ClInclude>
   </ItemGroup>
