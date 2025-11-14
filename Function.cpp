@@ -161,3 +161,15 @@ void Vehicle::draw() const
     settextstyle(20, 0, L"Arial");
     outtextxy(x - 10, y - carwidth / 2 - 25, speedText);
 }
+int Sedan_curve(int t)
+{
+    return 4 * t * t * t; // 更快的变道曲线
+}
+int SUV_curve(int t)
+{
+    return 3 * t * t - 2 * t * t * t; // 中等变道曲线
+}
+int Truck_curve(int t)
+{
+    return t * t * t; // 更慢的变道曲线
+}

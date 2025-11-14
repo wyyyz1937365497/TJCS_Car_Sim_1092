@@ -178,7 +178,27 @@ int main()
             v->checkFrontVehicleDistance(vehicles, v->getSafeDistance());
 
             if (v->isGoing2change)
-            {
+            {   if(typeid(*v) == typeid(Sedan))
+                {
+                    if (v->smoothLaneChange(laneHeight, vehicles,Sedan_curve))
+                    {
+                        v->haschanged = true;
+                    }
+                }
+                else if(typeid(*v) == typeid(SUV))
+                {
+                    if (v->smoothLaneChange(laneHeight, vehicles,SUV_curve))
+                    {
+                        v->haschanged = true;
+                    }
+                }
+                else if(typeid(*v) == typeid(Truck))
+                {
+                    if (v->smoothLaneChange(laneHeight, vehicles,Truck_curve))
+                    {
+                        v->haschanged = true;
+                    }
+                }
                 if (v->smoothLaneChange(laneHeight, vehicles))
                 {
                     v->haschanged = true;

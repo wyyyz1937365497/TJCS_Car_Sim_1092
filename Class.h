@@ -6,15 +6,16 @@
 #include <sstream>
 #include <string>
 #include <iostream>
+#include <functional>
 #include "Define.h"
 using namespace std;
 // 车辆类型枚举
-enum class VehicleType {
-    SEDAN,  // 小轿车
-    SUV,    // SUV
-    TRUCK   // 大卡车
+enum class VehicleType
+{
+    SEDAN, // 小轿车
+    SUV,   // SUV
+    TRUCK  // 大卡车
 };
-
 
 // 定义车辆的类
 struct Vehicle
@@ -24,15 +25,15 @@ struct Vehicle
     COLORREF color;
 
     // 默认构造函数
-Vehicle(int l = 0, int cl = 0, int cw = 0, int x = 0, int y = 0, int s = 0, bool hc = false, COLORREF c = RGB(255, 255, 255),
-        bool icl = false, bool igc = false, int tl = 0, float cp = 0.0f,
-        int sx = 0, int sy = 0, int ex = 0, int ey = 0, bool itc = false, COLORREF oc = RGB(255, 255, 255), bool ibd = false)
-    : lane(l), carlength(cl), carwidth(cw), x(x), y(y), speed(s), haschanged(hc), color(c),
-      isChangingLane(icl), isGoing2change(igc), targetLane(tl), changeProgress(cp),
-      startX(sx), startY(sy), endX(ex), endY(ey), isTooClose(itc), originalColor(oc), isBrokenDown(ibd) {}
+    Vehicle(int l = 0, int cl = 0, int cw = 0, int x = 0, int y = 0, int s = 0, bool hc = false, COLORREF c = RGB(255, 255, 255),
+            bool icl = false, bool igc = false, int tl = 0, float cp = 0.0f,
+            int sx = 0, int sy = 0, int ex = 0, int ey = 0, bool itc = false, COLORREF oc = RGB(255, 255, 255), bool ibd = false)
+        : lane(l), carlength(cl), carwidth(cw), x(x), y(y), speed(s), haschanged(hc), color(c),
+          isChangingLane(icl), isGoing2change(igc), targetLane(tl), changeProgress(cp),
+          startX(sx), startY(sy), endX(ex), endY(ey), isTooClose(itc), originalColor(oc), isBrokenDown(ibd) {}
 
     // 新增成员变量用于变道
-    bool isChangingLane;  // 是否正在变道
+    bool isChangingLane; // 是否正在变道
     bool isGoing2change;
     int targetLane;       // 目标车道
     float changeProgress; // 变道进度 (0.0-1.0)
@@ -49,13 +50,13 @@ Vehicle(int l = 0, int cl = 0, int cw = 0, int x = 0, int y = 0, int s = 0, bool
     bool isBrokenDown; // 车辆是否抛锚
     virtual void draw() const;
     // 预测并绘制轨迹
-    void predictAndDrawTrajectory(int laneHeight, int middleY, int predictionSteps = 30, const vector<Vehicle*> &allVehicles = vector<Vehicle*>()) const;
+    void predictAndDrawTrajectory(int laneHeight, int middleY, int predictionSteps = 30, const vector<Vehicle *> &allVehicles = vector<Vehicle *>()) const;
 
     // 检查变道是否安全
-    bool isLaneChangeSafe(int laneHeight, const vector<Vehicle*> &allVehicles) const;
+    bool isLaneChangeSafe(int laneHeight, const vector<Vehicle *> &allVehicles) const;
 
     // 检查与前车距离
-    void checkFrontVehicleDistance(vector<Vehicle*> &allVehicles, int safeDistance);
+    void checkFrontVehicleDistance(vector<Vehicle *> &allVehicles, int safeDistance);
 
     // 显示闪烁的橘色线框
     void showFlashingFrame();
@@ -67,7 +68,7 @@ Vehicle(int l = 0, int cl = 0, int cw = 0, int x = 0, int y = 0, int s = 0, bool
         x += (y < middleY) ? speed : -speed;
     }
     // 平滑变道函数
-    virtual bool smoothLaneChange(int laneHeight, const vector<Vehicle*> &allVehicles);
+    virtual bool smoothLaneChange(int laneHeight, const vector<Vehicle *> &allVehicles, function<int(int)> curveFunc=SUV_curve);
     // 获取安全距离（可被子类重写）
     virtual int getSafeDistance() const { return SAFE_DISTANCE; }
 };
@@ -102,6 +103,6 @@ struct Bridge
     // 根据屏幕分辨率调整窗口大小
     void calculateWindowSize(int &windowWidth, int &windowHeight, double &scale) const;
 };
-void clearLane(vector<Vehicle*>& vehicles, int lane);
+void clearLane(vector<Vehicle *> &vehicles, int lane);
 
 #pragma once

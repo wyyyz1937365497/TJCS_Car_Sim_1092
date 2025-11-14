@@ -14,7 +14,7 @@ using namespace std;
 
 // 绘制变道轨迹（红色虚线）
 // 平滑变道函数
-bool Vehicle::smoothLaneChange(int laneHeight, const vector<Vehicle*> &allVehicles)
+bool Vehicle::smoothLaneChange(int laneHeight, const vector<Vehicle*> &allVehicles,function<int(int)> curveFunc)
 {
     // 如果车辆已抛锚，不能变道
     if (isBrokenDown)
@@ -41,7 +41,7 @@ bool Vehicle::smoothLaneChange(int laneHeight, const vector<Vehicle*> &allVehicl
         // 使用固定的渐入渐出贝塞尔曲线计算垂直方向速度
         // y(t) = 3t² - 2t³，这是一个平滑的S型曲线，在t=0和t=1处导数为0
         float t = changeProgress;
-        float verticalSpeed = 3 * t * t - 2 * t * t * t;
+        float verticalSpeed = curveFunc(t);
 
         // 计算垂直方向上的位置变化
         float deltaY = (endY - startY) * verticalSpeed;
