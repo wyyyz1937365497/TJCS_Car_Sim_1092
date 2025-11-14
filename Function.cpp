@@ -10,16 +10,18 @@
 #include "Random.h"
 #include "Class.h"
 using namespace std;
-void clearLane(vector<Vehicle>& vehicles, int lane)
-{
-    vehicles.erase(remove_if(vehicles.begin(), vehicles.end(),
-        [lane](const Vehicle& v)
-        {
-            return v.lane == lane;
-        }),
-        vehicles.end());
+// 清除指定车道的所有车辆
+void clearLane(vector<Vehicle*>& vehicles, int lane) {
+    for (auto it = vehicles.begin(); it != vehicles.end(); ) {
+        if ((*it)->lane == lane) {
+            delete *it;  // 释放内存
+            it = vehicles.erase(it);  // 从vector中移除指针
+        }
+        else {
+            ++it;
+        }
+    }
 }
-
 // 绘制虚线
 void drawDashedLine(int x1, int y1, int x2, int y2)
 {

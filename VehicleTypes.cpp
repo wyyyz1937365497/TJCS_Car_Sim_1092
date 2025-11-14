@@ -4,7 +4,7 @@
 Sedan::Sedan(int lane, int carlength, int carwidth, int x, int y, int speed)
     : Vehicle(lane, carlength, carwidth, x, y, speed) {}
 
-bool Sedan::smoothLaneChange(int laneHeight, const std::vector<Vehicle> &allVehicles)
+bool Sedan::smoothLaneChange(int laneHeight, const std::vector<Vehicle*> &allVehicles)
 {
     // 实现更快的变道曲线
     // 可根据需要自定义变道逻辑
@@ -91,7 +91,7 @@ void Sedan::draw() const
 SUV::SUV(int lane, int carlength, int carwidth, int x, int y, int speed)
     : Vehicle(lane, carlength, carwidth, x, y, speed) {}
 
-bool SUV::smoothLaneChange(int laneHeight, const std::vector<Vehicle> &allVehicles)
+bool SUV::smoothLaneChange(int laneHeight, const std::vector<Vehicle*> &allVehicles)
 {
     // SUV变道速度适中
     changeProgress += 0.05f;
@@ -177,7 +177,7 @@ void SUV::draw() const
 Truck::Truck(int lane, int carlength, int carwidth, int x, int y, int speed)
     : Vehicle(lane, carlength, carwidth, x, y, speed) {}
 
-bool Truck::smoothLaneChange(int laneHeight, const std::vector<Vehicle> &allVehicles)
+bool Truck::smoothLaneChange(int laneHeight, const std::vector<Vehicle*> &allVehicles)
 {
     // 卡车变道更慢
     changeProgress += 0.03f;
