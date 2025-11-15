@@ -8,7 +8,7 @@ x64/
 *.lo
 *.o
 *.obj
-
+*.csv
 # Precompiled Headers
 *.gch
 *.pch

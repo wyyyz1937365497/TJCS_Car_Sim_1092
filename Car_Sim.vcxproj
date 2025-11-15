@@ -127,6 +127,7 @@
     <ClCompile Include="Car_Function.cpp" />
     <ClCompile Include="Car_Sim.cpp" />
     <ClCompile Include="Function.cpp" />
+    <ClCompile Include="VehicleStatistics.cpp" />
     <ClCompile Include="VehicleTypes.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -134,6 +135,7 @@
     <ClInclude Include="Class.h" />
     <ClInclude Include="Define.h" />
     <ClInclude Include="Random.h" />
+    <ClInclude Include="VehicleStatistics.h" />
     <ClInclude Include="VehicleTypes.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

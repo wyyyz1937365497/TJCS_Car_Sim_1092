@@ -98,9 +98,11 @@ void VirtualVehicle::drawTrajectory(bool isSafe) const
         line(trajectory[i - 1].first, trajectory[i - 1].second,
              trajectory[i].first, trajectory[i].second);
     }
-
+    
+    // 恢复线型
     setlinestyle(PS_SOLID, 1);
 }
+
 // 检查与另一车辆的轨迹是否相交
 bool VirtualVehicle::isTrajectoryIntersecting(const VirtualVehicle &other, int futureSteps) const
 {

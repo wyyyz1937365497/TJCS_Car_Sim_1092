@@ -30,6 +30,9 @@
     <ClCompile Include="BridgeLightingControl.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="VehicleStatistics.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Class.h">
@@ -45,6 +48,9 @@
       <Filter>源文件</Filter>
     </ClInclude>
     <ClInclude Include="BridgeLightingControl.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="VehicleStatistics.h">
       <Filter>源文件</Filter>
     </ClInclude>
   </ItemGroup>

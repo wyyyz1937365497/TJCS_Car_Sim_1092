@@ -426,7 +426,6 @@ void Vehicle::checkFrontVehicleDistance(vector<Vehicle *> &allVehicles, int safe
             }
             else if ((relativeSpeed > WAIT) && (relativeSpeed <= CRASH))
             {
-                carmessage("trying");
                 cout << "尝试变道" << endl; 
                 isGoing2change = true;
             }

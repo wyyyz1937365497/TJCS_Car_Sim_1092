@@ -13,6 +13,7 @@
 #include "VehicleTypes.h"
 #include "BridgeLightingControl.h"
 #include "Define.h"
+#include "VehicleStatistics.h"
 using namespace std;
 
 // 车辆生成频率控制变量（数值越小生成越频繁，1表示每次循环都尝试生成）
@@ -20,14 +21,16 @@ int vehicleGenerationFrequency = 10;
 // 安全距离控制变量
 int safeDistance = SAFE_DISTANCE;
 // 停止速度控制变量
-int stoppingSpeed = 15;  // 初始值设为15
+int stoppingSpeed = 15; // 初始值设为15
 
 // 在主循环之前添加函数声明
-int getGlobalSafeDistance() {
+int getGlobalSafeDistance()
+{
     return safeDistance;
 }
 
-int getGlobalStoppingSpeed() {
+int getGlobalStoppingSpeed()
+{
     return stoppingSpeed;
 }
 
@@ -45,6 +48,9 @@ int main()
     vector<Vehicle *> vehicles;
     srand((unsigned int)time(0));
     double time = 0;
+
+    // 初始化车辆统计对象
+    VehicleStatistics vehicleStats;
 
     normal_distribution<> normalwidth(3, 0.1);
     normal_distribution<> normallength(6, 0.1);
@@ -77,6 +83,12 @@ int main()
     const int ctrlBtnHeight = 25;
     const int ctrlBtnSpacing = 5;
 
+    // 退出按钮参数
+    const int exitBtnWidth = 60;
+    const int exitBtnHeight = 30;
+    const int exitBtnX = windowWidth - exitBtnWidth - 10; // 距离右边10像素
+    const int exitBtnY = (topBarHeight - exitBtnHeight) / 2; // 垂直居中
+
     // 频率控制按钮位置
     const int freqCtrlStartX = 10;
     const int freqCtrlStartY = 10;
@@ -103,12 +115,27 @@ int main()
         {btnStartX + 2 * (btnWidth + btnSpacing), btnStartY, btnStartX + 3 * btnWidth + 2 * btnSpacing, btnStartY + btnHeight, SNOW, L"下雪"}};
 
     // 绘制 UI 的 lambda（只绘制 top bar + right control bar + 按钮）
-    auto drawUI = [&](WeatherEffectManager &wm) {
+    auto drawUI = [&](WeatherEffectManager &wm)
+    {
         // 顶部横条（覆盖全宽，修复右上角黑色小矩形）
         setfillcolor(RGB(40, 40, 40));
         setlinecolor(RGB(80, 80, 80));
         fillrectangle(0, 0, windowWidth, topBarHeight);
         rectangle(0, 0, windowWidth, topBarHeight);
+
+        // 绘制退出按钮
+        setfillcolor(RGB(180, 70, 70)); // 红色
+        setlinecolor(WHITE);
+        fillrectangle(exitBtnX, exitBtnY, exitBtnX + exitBtnWidth, exitBtnY + exitBtnHeight);
+        rectangle(exitBtnX, exitBtnY, exitBtnX + exitBtnWidth, exitBtnY + exitBtnHeight);
+
+        settextstyle(16, 0, L"Arial");
+        settextcolor(WHITE);
+        setbkmode(TRANSPARENT);
+        const wchar_t* exitText = L"退出";
+        int textW = textwidth(exitText);
+        int textH = textheight(exitText);
+        outtextxy(exitBtnX + (exitBtnWidth - textW) / 2, exitBtnY + (exitBtnHeight - textH) / 2, exitText);
 
         // 在右侧绘制独立的竖直控制栏背景（从 topBarHeight 开始）
         setfillcolor(RGB(50, 50, 50));
@@ -119,24 +146,26 @@ int main()
         // 显示桥的参数信息（放在顶部 bar 左侧）
         wchar_t info[256];
         swprintf_s(info, L"桥长： %.0fm  桥宽：%.0fm  桥宽放大率： %.1f",
-               bridge.bridgeLength, bridge.bridgeWidth, bridge.widthScale);
+                   bridge.bridgeLength, bridge.bridgeWidth, bridge.widthScale);
         settextstyle(20, 0, L"Arial");
         settextcolor(WHITE);
         setbkmode(TRANSPARENT);
         outtextxy(10, (topBarHeight - 5) / 2, info);
-        
+
         // 显示时间（放在桥面右上角）
         wchar_t info2[256];
         swprintf_s(info2, L"时间： %.0fs", time);
         settextstyle(20, 0, L"Arial");
         outtextxy(roadWidth - 160, topBarHeight + 10, info2);
-        
+
         // 显示当前天气状态（放在天气按钮上方，居中）
         wchar_t weatherInfo[128];
         WeatherMode currentWeather = wm.getCurrentWeather();
-        const wchar_t* weatherText = L"正常";
-        if (currentWeather == RAIN) weatherText = L"下雨";
-        else if (currentWeather == SNOW) weatherText = L"下雪";
+        const wchar_t *weatherText = L"正常";
+        if (currentWeather == RAIN)
+            weatherText = L"下雨";
+        else if (currentWeather == SNOW)
+            weatherText = L"下雪";
         swprintf_s(weatherInfo, L"当前天气： %s", weatherText);
         settextstyle(18, 0, L"Arial");
         int weatherInfoW = textwidth(weatherInfo);
@@ -146,25 +175,25 @@ int main()
         for (int i = 0; i < 3; i++)
         {
             bool isActive = (weatherButtons[i].mode == currentWeather);
-            
+
             if (isActive)
             {
-                setfillcolor(RGB(0, 120, 215));  // 蓝色高亮
+                setfillcolor(RGB(0, 120, 215)); // 蓝色高亮
                 setlinecolor(RGB(0, 84, 153));
             }
             else
             {
-                setfillcolor(RGB(70, 70, 70));   // 灰色
+                setfillcolor(RGB(70, 70, 70)); // 灰色
                 setlinecolor(RGB(200, 200, 200));
             }
-            
-            fillroundrect(weatherButtons[i].x1, weatherButtons[i].y1, 
-                     weatherButtons[i].x2, weatherButtons[i].y2, 8, 8);
-            
+
+            fillroundrect(weatherButtons[i].x1, weatherButtons[i].y1,
+                          weatherButtons[i].x2, weatherButtons[i].y2, 8, 8);
+
             settextstyle(22, 0, L"Arial");
             settextcolor(WHITE);
             setbkmode(TRANSPARENT);
-            
+
             int textX = weatherButtons[i].x1 + (btnWidth - textwidth(weatherButtons[i].text)) / 2;
             int textY = weatherButtons[i].y1 + (btnHeight - textheight(weatherButtons[i].text)) / 2;
             outtextxy(textX, textY, weatherButtons[i].text);
@@ -174,65 +203,65 @@ int main()
         // 频率增加按钮
         setfillcolor(RGB(70, 70, 180));
         setlinecolor(WHITE);
-        fillrectangle(freqCtrlStartX, freqCtrlStartY, 
+        fillrectangle(freqCtrlStartX, freqCtrlStartY,
+                      freqCtrlStartX + ctrlBtnWidth, freqCtrlStartY + ctrlBtnHeight);
+        rectangle(freqCtrlStartX, freqCtrlStartY,
                   freqCtrlStartX + ctrlBtnWidth, freqCtrlStartY + ctrlBtnHeight);
-        rectangle(freqCtrlStartX, freqCtrlStartY, 
-              freqCtrlStartX + ctrlBtnWidth, freqCtrlStartY + ctrlBtnHeight);
-    
+
         // 频率减少按钮
         setfillcolor(RGB(70, 180, 70));
-        fillrectangle(freqCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing, freqCtrlStartY, 
+        fillrectangle(freqCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing, freqCtrlStartY,
+                      freqCtrlStartX + 2 * ctrlBtnWidth + ctrlBtnSpacing, freqCtrlStartY + ctrlBtnHeight);
+        rectangle(freqCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing, freqCtrlStartY,
                   freqCtrlStartX + 2 * ctrlBtnWidth + ctrlBtnSpacing, freqCtrlStartY + ctrlBtnHeight);
-        rectangle(freqCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing, freqCtrlStartY, 
-              freqCtrlStartX + 2 * ctrlBtnWidth + ctrlBtnSpacing, freqCtrlStartY + ctrlBtnHeight);
-    
+
         // 绘制安全距离控制按钮
         // 安全距离增加按钮
         setfillcolor(RGB(180, 70, 70));
-        fillrectangle(distCtrlStartX, distCtrlStartY, 
+        fillrectangle(distCtrlStartX, distCtrlStartY,
+                      distCtrlStartX + ctrlBtnWidth, distCtrlStartY + ctrlBtnHeight);
+        rectangle(distCtrlStartX, distCtrlStartY,
                   distCtrlStartX + ctrlBtnWidth, distCtrlStartY + ctrlBtnHeight);
-        rectangle(distCtrlStartX, distCtrlStartY, 
-              distCtrlStartX + ctrlBtnWidth, distCtrlStartY + ctrlBtnHeight);
-    
+
         // 安全距离减少按钮
         setfillcolor(RGB(180, 180, 70));
-        fillrectangle(distCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing, distCtrlStartY, 
+        fillrectangle(distCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing, distCtrlStartY,
+                      distCtrlStartX + 2 * ctrlBtnWidth + ctrlBtnSpacing, distCtrlStartY + ctrlBtnHeight);
+        rectangle(distCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing, distCtrlStartY,
                   distCtrlStartX + 2 * ctrlBtnWidth + ctrlBtnSpacing, distCtrlStartY + ctrlBtnHeight);
-        rectangle(distCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing, distCtrlStartY, 
-              distCtrlStartX + 2 * ctrlBtnWidth + ctrlBtnSpacing, distCtrlStartY + ctrlBtnHeight);
-    
+
         // 绘制停止速度控制按钮
         // 停止速度增加按钮
         setfillcolor(RGB(70, 180, 180));
-        fillrectangle(stopSpeedCtrlStartX, stopSpeedCtrlStartY, 
+        fillrectangle(stopSpeedCtrlStartX, stopSpeedCtrlStartY,
+                      stopSpeedCtrlStartX + ctrlBtnWidth, stopSpeedCtrlStartY + ctrlBtnHeight);
+        rectangle(stopSpeedCtrlStartX, stopSpeedCtrlStartY,
                   stopSpeedCtrlStartX + ctrlBtnWidth, stopSpeedCtrlStartY + ctrlBtnHeight);
-        rectangle(stopSpeedCtrlStartX, stopSpeedCtrlStartY, 
-              stopSpeedCtrlStartX + ctrlBtnWidth, stopSpeedCtrlStartY + ctrlBtnHeight);
-    
+
         // 停止速度减少按钮
         setfillcolor(RGB(180, 70, 180));
-        fillrectangle(stopSpeedCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing, stopSpeedCtrlStartY, 
+        fillrectangle(stopSpeedCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing, stopSpeedCtrlStartY,
+                      stopSpeedCtrlStartX + 2 * ctrlBtnWidth + ctrlBtnSpacing, stopSpeedCtrlStartY + ctrlBtnHeight);
+        rectangle(stopSpeedCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing, stopSpeedCtrlStartY,
                   stopSpeedCtrlStartX + 2 * ctrlBtnWidth + ctrlBtnSpacing, stopSpeedCtrlStartY + ctrlBtnHeight);
-        rectangle(stopSpeedCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing, stopSpeedCtrlStartY, 
-              stopSpeedCtrlStartX + 2 * ctrlBtnWidth + ctrlBtnSpacing, stopSpeedCtrlStartY + ctrlBtnHeight);
-    
+
         // 绘制按钮文字
         settextstyle(14, 0, L"Arial");
         settextcolor(WHITE);
         setbkmode(TRANSPARENT);
-    
+
         // 频率控制按钮文字
-        outtextxy(freqCtrlStartX + 5, freqCtrlStartY + 5, L"频+");  // 频率增加
-        outtextxy(freqCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing + 5, freqCtrlStartY + 5, L"频-");  // 频率减少
-    
+        outtextxy(freqCtrlStartX + 5, freqCtrlStartY + 5, L"频+");                                 // 频率增加
+        outtextxy(freqCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing + 5, freqCtrlStartY + 5, L"频-"); // 频率减少
+
         // 安全距离控制按钮文字
-        outtextxy(distCtrlStartX + 5, distCtrlStartY + 5, L"距+");  // 距离增加
-        outtextxy(distCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing + 5, distCtrlStartY + 5, L"距-");  // 距离减少
-    
+        outtextxy(distCtrlStartX + 5, distCtrlStartY + 5, L"距+");                                 // 距离增加
+        outtextxy(distCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing + 5, distCtrlStartY + 5, L"距-"); // 距离减少
+
         // 停止速度控制按钮文字
-        outtextxy(stopSpeedCtrlStartX + 5, stopSpeedCtrlStartY + 5, L"速+");  // 速度增加
-        outtextxy(stopSpeedCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing + 5, stopSpeedCtrlStartY + 5, L"速-");  // 速度减少
-    
+        outtextxy(stopSpeedCtrlStartX + 5, stopSpeedCtrlStartY + 5, L"速+");                                 // 速度增加
+        outtextxy(stopSpeedCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing + 5, stopSpeedCtrlStartY + 5, L"速-"); // 速度减少
+
         // 显示当前频率、安全距离和停止速度值
         wchar_t statusText[256];
         swprintf_s(statusText, L"生成频率:%d 探测距离:%d 减速度:%d", vehicleGenerationFrequency, safeDistance, stoppingSpeed);
@@ -289,6 +318,13 @@ int main()
             MOUSEMSG msg = GetMouseMsg();
             if (msg.uMsg == WM_LBUTTONDOWN)
             {
+                // 检查是否点击退出按钮
+                if (msg.x >= exitBtnX && msg.x <= exitBtnX + exitBtnWidth &&
+                    msg.y >= exitBtnY && msg.y <= exitBtnY + exitBtnHeight)
+                {
+                    running = false;
+                }
+
                 // 检查是否点击右侧控制栏中的车道清除按钮
                 if (msg.x >= roadWidth && msg.x <= windowWidth)
                 {
@@ -299,7 +335,7 @@ int main()
                         uiNeedsRedraw = true; // 立即重绘 control bar，这样按钮状态/视觉立即响应
                     }
                 }
-                
+
                 // 检查是否点击天气按钮（位于顶部横条中间）
                 for (int i = 0; i < 3; i++)
                 {
@@ -311,7 +347,7 @@ int main()
                         break;
                     }
                 }
-                
+
                 // 检查是否点击控制按钮（频率、安全距离和停止速度控制按钮）
                 // 频率增加按钮
                 if (msg.x >= freqCtrlStartX && msg.x <= freqCtrlStartX + ctrlBtnWidth &&
@@ -321,7 +357,7 @@ int main()
                     uiNeedsRedraw = true;
                 }
                 // 频率减少按钮
-                else if (msg.x >= freqCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing && 
+                else if (msg.x >= freqCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing &&
                          msg.x <= freqCtrlStartX + 2 * ctrlBtnWidth + ctrlBtnSpacing &&
                          msg.y >= freqCtrlStartY && msg.y <= freqCtrlStartY + ctrlBtnHeight)
                 {
@@ -336,7 +372,7 @@ int main()
                     uiNeedsRedraw = true;
                 }
                 // 安全距离减少按钮
-                else if (msg.x >= distCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing && 
+                else if (msg.x >= distCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing &&
                          msg.x <= distCtrlStartX + 2 * ctrlBtnWidth + ctrlBtnSpacing &&
                          msg.y >= distCtrlStartY && msg.y <= distCtrlStartY + ctrlBtnHeight)
                 {
@@ -351,7 +387,7 @@ int main()
                     uiNeedsRedraw = true;
                 }
                 // 停止速度减少按钮
-                else if (msg.x >= stopSpeedCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing && 
+                else if (msg.x >= stopSpeedCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing &&
                          msg.x <= stopSpeedCtrlStartX + 2 * ctrlBtnWidth + ctrlBtnSpacing &&
                          msg.y >= stopSpeedCtrlStartY && msg.y <= stopSpeedCtrlStartY + ctrlBtnHeight)
                 {
@@ -365,6 +401,10 @@ int main()
         {
             drawUI(weatherManager);
         }
+
+        // 检查参数是否改变并记录统计数据
+        vehicleStats.checkAndRecordParameters(time, safeDistance, stoppingSpeed, vehicles);
+
         // 生成新车（生成 X 坐标限制在 roadWidth 范围内，不会在控制栏生成）
         // 根据vehicleGenerationFrequency值控制生成频率
         if (rand() % vehicleGenerationFrequency == 0)
@@ -432,6 +472,8 @@ int main()
                 if (newVehicle)
                 {
                     vehicles.push_back(newVehicle);
+                    // 记录生成的车辆类型
+                    vehicleStats.recordVehicle(newVehicle);
                 }
             }
         }
@@ -445,7 +487,7 @@ int main()
         for (auto &v : vehicles)
         {
             COLORREF originalColor = v->color;
-            v->checkFrontVehicleDistance(vehicles, safeDistance,laneHeight);
+            v->checkFrontVehicleDistance(vehicles, safeDistance, laneHeight);
 
             if (v->speed == 0)
             {
@@ -556,10 +598,20 @@ int main()
 
             v->draw();
         }
-
+        // 保留键盘快捷键（可选）
+        if (_kbhit())
+        {
+            char key = _getch();
+            if (key == 27 || key == 'q' || key == 'Q')
+            {
+                running = false;
+            }
+        }
         Sleep(40);
         time += 0.2;
     }
+    // 保存统计数据
+    vehicleStats.saveAllStatistics();
 
     // 程序结束前释放所有车辆内存
     for (auto v : vehicles)
@@ -573,6 +625,7 @@ int main()
 }
 
 // 在文件末尾添加getSafeDistance函数的实现
-int Vehicle::getSafeDistance() const {
+int Vehicle::getSafeDistance() const
+{
     return getGlobalSafeDistance();
 }
