@@ -75,7 +75,7 @@ int main()
 
             settextstyle((int)(laneHeight / 2), 0, L"Arial");
             settextcolor(WHITE);
-            outtextxy(buttonX + 10, buttonY, i < laneCount / 2 ? L"→" : L"←");
+            outtextxy(buttonX + 10, buttonY, i < laneCount / 2 ? L"\u2192" : L"\u2190");
         }
 
         // 检查鼠标点击
@@ -174,7 +174,11 @@ int main()
                 v->handleDangerousSituation();
             }
 
-            v->moveForward(middleY);
+            // 只有在非变道状态下才调用moveForward函数
+            if (!v->isChangingLane) {
+                v->moveForward(middleY);
+            }
+            
             v->checkFrontVehicleDistance(vehicles, v->getSafeDistance());
 
             if (v->isGoing2change)
@@ -239,7 +243,7 @@ int main()
             v->draw();
         }
 
-        Sleep(60);
+        Sleep(20);
         time += 0.2;
     }
 

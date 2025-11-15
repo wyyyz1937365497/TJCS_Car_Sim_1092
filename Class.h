@@ -43,6 +43,8 @@ struct Vehicle
     int startY;           // 变道起始Y坐标
     int endX;             // 变道结束X坐标
     int endY;             // 变道结束Y坐标
+    // 预计算的变道轨迹点
+    vector<pair<int, int>> laneChangeTrajectory; // 变道轨迹点集合
 
     // 距离警告相关成员
     bool isTooClose;        // 是否距离前车过近
