@@ -61,7 +61,7 @@ struct Vehicle
     bool isLaneChangeSafe(int laneHeight, const vector<Vehicle *> &allVehicles) const;
 
     // 检查与前车距离
-    void checkFrontVehicleDistance(vector<Vehicle *> &allVehicles,int safeDistance);
+    void checkFrontVehicleDistance(vector<Vehicle *> &allVehicles,int safeDistance,int laneHeight);
 
     // 显示闪烁的橘色线框
     void showFlashingFrame();

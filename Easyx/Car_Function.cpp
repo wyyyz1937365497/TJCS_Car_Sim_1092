@@ -17,7 +17,7 @@ using namespace std;
 // 平滑变道函数
 bool Vehicle::smoothLaneChange(int laneHeight, const vector<Vehicle *> &allVehicles)
 {
-    cout<<"正在平滑变道..."<<endl;
+    cout << "正在平滑变道..." << endl;
     // 如果车辆已抛锚，不能变道
     if (isBrokenDown)
     {
@@ -175,13 +175,13 @@ bool Vehicle::smoothLaneChange(int laneHeight, const vector<Vehicle *> &allVehic
         }
 
         // 检查轨迹是否相交
-        //if (virtualCar.isTrajectoryIntersecting(otherVirtual, predictionSteps))
-        //{
-        //    cout<<"变道失败"<<endl;
-        //    isGoing2change = false;       // 取消准备变道状态
-        //    laneChangeTrajectory.clear(); // 清空轨迹点
-        //    return false;                 // 轨迹相交，变道不安全，取消变道
-        //}
+        if (virtualCar.isTrajectoryIntersecting(otherVirtual, predictionSteps))
+        {
+            cout << "变道失败" << endl;
+            isGoing2change = false;       // 取消准备变道状态
+            laneChangeTrajectory.clear(); // 清空轨迹点
+            return false;                 // 轨迹相交，变道不安全，取消变道
+        }
     }
 
     // 变道安全，设置参数
@@ -365,7 +365,7 @@ bool Vehicle::isLaneChangeSafe(int laneHeight, const vector<Vehicle *> &allVehic
 }
 
 // 检查与前车距离
-void Vehicle::checkFrontVehicleDistance(vector<Vehicle *> &allVehicles,int safeDistance)
+void Vehicle::checkFrontVehicleDistance(vector<Vehicle *> &allVehicles, int safeDistance, int laneHeight)
 {
     if (isBrokenDown)
     {
@@ -421,7 +421,7 @@ void Vehicle::checkFrontVehicleDistance(vector<Vehicle *> &allVehicles,int safeD
                 else
                 {
                     // 如果相对速度小于等于WAIT，将后车速度设为前车速度
-                    speed = speed - 15;
+                    speed = speed - stoppingSpeed;
                 }
             }
             else if ((relativeSpeed > WAIT) && (relativeSpeed <= CRASH))

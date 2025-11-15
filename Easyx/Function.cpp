@@ -1,4 +1,4 @@
-﻿#include <graphics.h>
+#include <graphics.h>
 #include <vector>
 #include <ctime>
 #include <conio.h> // 需要包含此头文件_kbhit()函数需要
@@ -9,6 +9,7 @@
 
 #include "Random.h"
 #include "Class.h"
+#include "Define.h"
 using namespace std;
 // 清除指定车道的所有车辆
 void clearLane(vector<Vehicle *> &vehicles, int lane)
