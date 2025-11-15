@@ -1,4 +1,4 @@
-﻿#include <graphics.h>
+#include <graphics.h>
 #include <vector>
 #include <ctime>
 #include <conio.h> // 需要包含此头文件_kbhit()函数需要
@@ -10,16 +10,18 @@
 #include "Random.h"
 #include "Class.h"
 using namespace std;
-void clearLane(vector<Vehicle>& vehicles, int lane)
-{
-    vehicles.erase(remove_if(vehicles.begin(), vehicles.end(),
-        [lane](const Vehicle& v)
-        {
-            return v.lane == lane;
-        }),
-        vehicles.end());
+// 清除指定车道的所有车辆
+void clearLane(vector<Vehicle*>& vehicles, int lane) {
+    for (auto it = vehicles.begin(); it != vehicles.end(); ) {
+        if ((*it)->lane == lane) {
+            delete *it;  // 释放内存
+            it = vehicles.erase(it);  // 从vector中移除指针
+        }
+        else {
+            ++it;
+        }
+    }
 }
-
 // 绘制虚线
 void drawDashedLine(int x1, int y1, int x2, int y2)
 {
@@ -79,7 +81,7 @@ bool VirtualVehicle::isTrajectoryIntersecting(const VirtualVehicle &other, int f
         int otherX = i < other.trajectory.size() ? other.trajectory[i].first : other.x;
         int otherY = i < other.trajectory.size() ? other.trajectory[i].second : other.y;
 
-        // 检查两个矩形是否相交
+        // 检查两个矩形是否相交，并增加一个小的安全缓冲区
         int myLeft = myX - carlength / 2;
         int myRight = myX + carlength / 2;
         int myTop = myY - carwidth / 2;
@@ -89,6 +91,18 @@ bool VirtualVehicle::isTrajectoryIntersecting(const VirtualVehicle &other, int f
         int otherRight = otherX + other.carlength / 2;
         int otherTop = otherY - other.carwidth / 2;
         int otherBottom = otherY + other.carwidth / 2;
+
+        // 增加一个小的安全缓冲区（5像素），使检测更加保守
+        const int safetyBuffer = 5;
+        myLeft -= safetyBuffer;
+        myRight += safetyBuffer;
+        myTop -= safetyBuffer;
+        myBottom += safetyBuffer;
+        
+        otherLeft -= safetyBuffer;
+        otherRight += safetyBuffer;
+        otherTop -= safetyBuffer;
+        otherBottom += safetyBuffer;
 
         // 矩形相交检测
         if (!(myLeft > otherRight || myRight < otherLeft ||
@@ -158,4 +172,16 @@ void Vehicle::draw() const
     settextcolor(WHITE);
     settextstyle(20, 0, L"Arial");
     outtextxy(x - 10, y - carwidth / 2 - 25, speedText);
+}
+int Sedan_curve(int t)
+{
+    return 4 * t * t * t; // 更快的变道曲线
+}
+int SUV_curve(int t)
+{
+    return 4 * t * t * t; // 中等变道曲线
+}
+int Truck_curve(int t)
+{
+    return 4* t* t* t; // 更慢的变道曲线
 }

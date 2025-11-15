@@ -1,4 +1,4 @@
-﻿#include <graphics.h>
+#include <graphics.h>
 #include <vector>
 #include <ctime>
 #include <conio.h>
@@ -11,10 +11,11 @@
 #include "Random.h"
 #include "Class.h"
 #include "Define.h"
+#include "VehicleTypes.h"
 using namespace std;
 
 // 平滑变道函数
-bool Vehicle::smoothLaneChange(int laneHeight, const vector<unique_ptr<Vehicle>> &allVehicles)
+bool Vehicle::smoothLaneChange(int laneHeight, const vector<Vehicle *> &allVehicles)
 {
     // 如果车辆已抛锚，不能变道
     if (isBrokenDown)
@@ -24,8 +25,16 @@ bool Vehicle::smoothLaneChange(int laneHeight, const vector<unique_ptr<Vehicle>>
 
     if (isChangingLane)
     {
-        // 更新变道进度
-        changeProgress += 0.02f;
+        // 更新变道进度，基于车辆类型调整变道速度
+        // 小轿车变道较快，卡车较慢
+        float changeSpeed = 0.02f;
+        if (dynamic_cast<const Sedan*>(this)) {
+            changeSpeed = 0.025f;  // 小轿车变道稍快
+        } else if (dynamic_cast<const Truck*>(this)) {
+            changeSpeed = 0.015f;  // 卡车变道稍慢
+        }
+        
+        changeProgress += changeSpeed;
 
         if (changeProgress >= 1.0f)
         {
@@ -35,16 +44,20 @@ bool Vehicle::smoothLaneChange(int laneHeight, const vector<unique_ptr<Vehicle>>
             isGoing2change = false;
             lane = targetLane;
             speed = speed * 2; // 恢复速度
+            
+            // 清空轨迹点
+            laneChangeTrajectory.clear();
             return true;
         }
 
-        // 使用固定的渐入渐出贝塞尔曲线计算垂直方向速度
-        float t = changeProgress;
-        float verticalSpeed = 3 * t * t - 2 * t * t * t;
-
-        // 计算垂直方向上的位置变化
-        float deltaY = (endY - startY) * verticalSpeed;
-        y = startY + (int)deltaY;
+        // 使用预计算的轨迹点更新车辆位置
+        int trajectoryIndex = (int)(changeProgress * (laneChangeTrajectory.size() - 1));
+        if (trajectoryIndex >= laneChangeTrajectory.size()) {
+            trajectoryIndex = laneChangeTrajectory.size() - 1;
+        }
+        
+        x = laneChangeTrajectory[trajectoryIndex].first;
+        y = laneChangeTrajectory[trajectoryIndex].second;
 
         return false;
     }
@@ -64,65 +77,103 @@ bool Vehicle::smoothLaneChange(int laneHeight, const vector<unique_ptr<Vehicle>>
         tempTargetLane = lane + (rand() % 2 ? 1 : -1);
     }
 
-    // 创建虚拟车辆用于轨迹预测
-    VirtualVehicle virtualCar(x, y, carlength, carwidth);
-    virtualCar.addTrajectoryPoint(x, y);
-
-    // 预测变道轨迹
+    // 预先计算整个变道轨迹点
+    laneChangeTrajectory.clear();
+    const int predictionSteps = 50; // 增加轨迹点数量以获得更平滑的移动
+    
+    // 水平方向保持匀速运动
     int currentX = x;
+    int targetX = x + (y < laneHeight * 3 ? 1 : -1) * abs(endX - startX); // 水平方向移动距离
+    int deltaX = targetX - currentX;
+    
+    // 垂直方向目标位置
     int currentY = y;
     int targetY = laneHeight * tempTargetLane + (int)(0.5 * laneHeight);
-    int currentSpeed = (y < laneHeight * 3) ? speed : -speed;
-
-    for (int i = 1; i <= 30; ++i)
+    int deltaY = targetY - currentY;
+    
+    // 水平方向速度保持不变
+    int horizontalSpeed = (y < laneHeight * 3) ? speed : -speed;
+    int totalHorizontalDistance = horizontalSpeed * 30; // 控制水平移动距离
+    
+    for (int i = 0; i <= predictionSteps; ++i)
     {
-        float t = min(1.0f, i * 0.02f);
-        float verticalSpeed = 3 * t * t - 2 * t * t * t;
-        float deltaY = (targetY - currentY) * verticalSpeed;
-        int newY = currentY + (int)deltaY;
-        int newX = currentX + i * currentSpeed;
-        virtualCar.addTrajectoryPoint(newX, newY);
+        // 计算进度
+        float t = i * (1.0f / predictionSteps);
+
+        // 水平方向匀速运动
+        int newX = currentX + (int)(totalHorizontalDistance * t);
+        
+        // 垂直方向使用贝塞尔曲线
+        float verticalProgress = curveFunc(t);
+        int newY = currentY + (int)(deltaY * verticalProgress);
+
+        // 添加到轨迹
+        laneChangeTrajectory.push_back(make_pair(newX, newY));
+    }
+
+    // 创建虚拟车辆用于轨迹预测
+    VirtualVehicle virtualCar(x, y, carlength, carwidth);
+
+    // 添加轨迹点用于碰撞检测
+    for (const auto& point : laneChangeTrajectory) {
+        virtualCar.addTrajectoryPoint(point.first, point.second);
     }
 
     // 检查与其他车辆的轨迹是否相交
-    for (const auto &other : allVehicles)
+    for (const auto other : allVehicles)
     {
-        if (other.get() == this)
-            continue;
+        if (other == this)
+            continue; // 跳过自己
 
-        VirtualVehicle otherVirtual(other->x, other->y, other->carlength, other->carwidth);
+        // 为其他车辆创建虚拟车辆
+        VirtualVehicle otherVirtual((*other).x, (*other).y, (*other).carlength, (*other).carwidth);
 
-        if (other->isChangingLane)
+        // 判断其他车辆是否在变道中
+        if ((*other).isChangingLane)
         {
-            float otherProgress = other->changeProgress;
-            int otherStartY = other->startY;
-            int otherEndY = other->endY;
-            int otherSpeed = (other->y < laneHeight * 3) ? other->speed : -other->speed;
+            // 如果其他车辆也在变道，预测其变道轨迹
+            float otherProgress = (*other).changeProgress;
+            int otherStartX = (*other).startX;
+            int otherStartY = (*other).startY;
+            int otherEndX = (*other).endX;
+            int otherEndY = (*other).endY;
+            int otherSpeed = ((*other).y < laneHeight * 3) ? (*other).speed : -(*other).speed;
 
-            for (int i = 1; i <= 30; ++i)
+            // 预测其他车辆的变道轨迹
+            for (int i = 1; i <= predictionSteps; ++i)
             {
-                float t = min(1.0f, otherProgress + i * 0.02f);
-                float verticalSpeed = 3 * t * t - 2 * t * t * t;
+                // 更新进度
+                float t = min(1.0f, otherProgress + i * (1.0f / predictionSteps));
+
+                // 计算垂直位置 使用该车辆特定的变道曲线函数
+                float verticalSpeed = other->curveFunc(t);
                 float deltaY = (otherEndY - otherStartY) * verticalSpeed;
                 int newY = otherStartY + (int)deltaY;
-                int newX = other->x + i * otherSpeed;
+
+                // 计算水平位置（保持原有速度）
+                int newX = (*other).x + i * otherSpeed * (1.0f / predictionSteps) * 15; // 调整水平位移计算
+
+                // 添加到轨迹
                 otherVirtual.addTrajectoryPoint(newX, newY);
             }
         }
         else
         {
-            int otherSpeed = (other->y < laneHeight * 3) ? other->speed : -other->speed;
-            for (int i = 1; i <= 30; ++i)
+            // 其他车辆直线行驶，预测其直线轨迹
+            int otherSpeed = ((*other).y < laneHeight * 3) ? (*other).speed : -(*other).speed;
+            for (int i = 1; i <= predictionSteps; ++i)
             {
-                int newX = other->x + i * otherSpeed;
-                otherVirtual.addTrajectoryPoint(newX, other->y);
+                int newX = (*other).x + i * otherSpeed * (1.0f / predictionSteps) * 15; // 调整水平位移计算
+                otherVirtual.addTrajectoryPoint(newX, (*other).y);
             }
         }
 
-        if (virtualCar.isTrajectoryIntersecting(otherVirtual, 30))
+        // 检查轨迹是否相交
+        if (virtualCar.isTrajectoryIntersecting(otherVirtual, predictionSteps))
         {
-            isGoing2change = false;
-            return false;
+            isGoing2change = false; // 取消准备变道状态
+            laneChangeTrajectory.clear(); // 清空轨迹点
+            return false;           // 轨迹相交，变道不安全，取消变道
         }
     }
 
@@ -130,15 +181,17 @@ bool Vehicle::smoothLaneChange(int laneHeight, const vector<unique_ptr<Vehicle>>
     targetLane = tempTargetLane;
     startX = x;
     startY = y;
-    endX = x + 25;
-    endY = laneHeight * targetLane + (int)(0.5 * laneHeight);
+    endX = laneChangeTrajectory.back().first; // 使用轨迹的终点
+    endY = laneChangeTrajectory.back().second; // 使用轨迹的终点
+
+    // 开始变道
     isChangingLane = true;
     changeProgress = 0.0f;
     return false;
 }
 
 // 预测并绘制轨迹
-void Vehicle::predictAndDrawTrajectory(int laneHeight, int middleY, int predictionSteps, const vector<unique_ptr<Vehicle>> &allVehicles) const
+void Vehicle::predictAndDrawTrajectory(int laneHeight, int middleY, int predictionSteps, const vector<Vehicle *> &allVehicles) const
 {
     VirtualVehicle virtualCar(x, y, carlength, carwidth);
     virtualCar.addTrajectoryPoint(x, y);
@@ -146,48 +199,46 @@ void Vehicle::predictAndDrawTrajectory(int laneHeight, int middleY, int predicti
     int currentX = x;
     int currentY = y;
     int currentSpeed = (y < middleY) ? speed : -speed;
+    const int predSteps = 30; // 统一预测步数
 
+    // 如果正在变道，使用预计算的轨迹点
     if (isChangingLane)
     {
-        float currentProgress = changeProgress;
-        int currentStartY = startY;
-        int currentEndY = endY;
-
-        for (int i = 1; i <= predictionSteps; ++i)
+        // 使用已预计算的变道轨迹点
+        for (size_t i = 1; i < laneChangeTrajectory.size(); ++i)
         {
-            float t = min(1.0f, currentProgress + i * 0.02f);
-            float verticalSpeed = 3 * t * t - 2 * t * t * t;
-            float deltaY = (currentEndY - currentStartY) * verticalSpeed;
-            int newY = currentStartY + (int)deltaY;
-            int newX = currentX + i * currentSpeed;
-            virtualCar.addTrajectoryPoint(newX, newY);
+            virtualCar.addTrajectoryPoint(laneChangeTrajectory[i].first, laneChangeTrajectory[i].second);
         }
     }
     else
     {
-        for (int i = 1; i <= predictionSteps; ++i)
+        // 预测直线行驶轨迹
+        for (int i = 1; i <= predSteps; ++i)
         {
-            int newX = currentX + i * currentSpeed;
+            int newX = currentX + i * currentSpeed * (1.0f / predSteps) * 15; // 调整水平位移计算
             virtualCar.addTrajectoryPoint(newX, currentY);
         }
     }
 
     bool isSafe = true;
-    for (const auto &other : allVehicles)
+    for (const auto other : allVehicles)
     {
-        if (other.get() == this)
-            continue;
+        if (other == this)
+            continue; // 跳过自己
 
-        VirtualVehicle otherVirtual(other->x, other->y, other->carlength, other->carwidth);
+        // 为其他车辆创建虚拟车辆
+        VirtualVehicle otherVirtual((*other).x, (*other).y, (*other).carlength, (*other).carwidth);
 
-        int otherSpeed = (other->y < middleY) ? other->speed : -other->speed;
-        for (int i = 1; i <= predictionSteps; ++i)
+        // 预测其他车辆的直线行驶轨迹
+        int otherSpeed = ((*other).y < middleY) ? (*other).speed : -(*other).speed;
+        for (int i = 1; i <= predSteps; ++i)
         {
-            int newX = other->x + i * otherSpeed;
-            otherVirtual.addTrajectoryPoint(newX, other->y);
+            int newX = (*other).x + i * otherSpeed * (1.0f / predSteps) * 15; // 调整水平位移计算
+            otherVirtual.addTrajectoryPoint(newX, (*other).y);
         }
 
-        if (virtualCar.isTrajectoryIntersecting(otherVirtual, predictionSteps))
+        // 检查轨迹是否相交
+        if (virtualCar.isTrajectoryIntersecting(otherVirtual, predSteps))
         {
             isSafe = false;
             break;
@@ -199,7 +250,7 @@ void Vehicle::predictAndDrawTrajectory(int laneHeight, int middleY, int predicti
 }
 
 // 检查变道是否安全
-bool Vehicle::isLaneChangeSafe(int laneHeight, const vector<unique_ptr<Vehicle>> &allVehicles) const
+bool Vehicle::isLaneChangeSafe(int laneHeight, const vector<Vehicle *> &allVehicles) const
 {
     if (haschanged)
     {
@@ -227,52 +278,77 @@ bool Vehicle::isLaneChangeSafe(int laneHeight, const vector<unique_ptr<Vehicle>>
     int currentY = y;
     int targetY = laneHeight * target + (int)(0.5 * laneHeight);
     int currentSpeed = (y < laneHeight * 3) ? speed : -speed;
+    const int predictionSteps = 30; // 统一预测步数
 
-    for (int i = 1; i <= 30; ++i)
+    // 预测变道轨迹
+    for (int i = 1; i <= predictionSteps; ++i)
     {
-        float t = min(1.0f, i * 0.02f);
-        float verticalSpeed = 3 * t * t - 2 * t * t * t;
+        // 计算进度
+        float t = min(1.0f, i * (1.0f / predictionSteps));
+
+        // 计算垂直位置
+        float verticalSpeed = curveFunc(t);
         float deltaY = (targetY - currentY) * verticalSpeed;
         int newY = currentY + (int)deltaY;
-        int newX = currentX + i * currentSpeed;
+
+        // 计算水平位置（保持原有速度）
+        int newX = currentX + i * currentSpeed * (1.0f / predictionSteps) * 15; // 调整水平位移计算
+
+        // 添加到轨迹
         virtualCar.addTrajectoryPoint(newX, newY);
     }
 
-    for (const auto &other : allVehicles)
+    // 检查与其他车辆的轨迹是否相交
+    for (const auto other : allVehicles)
     {
-        if (other.get() == this)
-            continue;
+        if (other == this)
+            continue; // 跳过自己
 
-        VirtualVehicle otherVirtual(other->x, other->y, other->carlength, other->carwidth);
+        // 为其他车辆创建虚拟车辆
+        VirtualVehicle otherVirtual((*other).x, (*other).y, (*other).carlength, (*other).carwidth);
 
-        if (other->isChangingLane)
+        // 判断其他车辆是否在变道中
+        if ((*other).isChangingLane)
         {
-            float otherProgress = other->changeProgress;
-            int otherStartY = other->startY;
-            int otherEndY = other->endY;
-            int otherSpeed = (other->y < laneHeight * 3) ? other->speed : -other->speed;
+            // 如果其他车辆也在变道，预测其变道轨迹
+            float otherProgress = (*other).changeProgress;
+            int otherStartX = (*other).startX;
+            int otherStartY = (*other).startY;
+            int otherEndX = (*other).endX;
+            int otherEndY = (*other).endY;
+            int otherSpeed = ((*other).y < laneHeight * 3) ? (*other).speed : -(*other).speed;
 
-            for (int i = 1; i <= 30; ++i)
+            // 预测其他车辆的变道轨迹
+            for (int i = 1; i <= predictionSteps; ++i)
             {
-                float t = min(1.0f, otherProgress + i * 0.02f);
-                float verticalSpeed = 3 * t * t - 2 * t * t * t;
+                // 更新进度
+                float t = min(1.0f, otherProgress + i * (1.0f / predictionSteps));
+
+                // 计算垂直位置
+                float verticalSpeed = other->curveFunc(t);
                 float deltaY = (otherEndY - otherStartY) * verticalSpeed;
                 int newY = otherStartY + (int)deltaY;
-                int newX = other->x + i * otherSpeed;
+
+                // 计算水平位置（保持原有速度）
+                int newX = (*other).x + i * otherSpeed * (1.0f / predictionSteps) * 15; // 调整水平位移计算
+
+                // 添加到轨迹
                 otherVirtual.addTrajectoryPoint(newX, newY);
             }
         }
         else
         {
-            int otherSpeed = (other->y < laneHeight * 3) ? other->speed : -other->speed;
-            for (int i = 1; i <= 30; ++i)
+            // 其他车辆直线行驶，预测其直线轨迹
+            int otherSpeed = ((*other).y < laneHeight * 3) ? (*other).speed : -(*other).speed;
+            for (int i = 1; i <= predictionSteps; ++i)
             {
-                int newX = other->x + i * otherSpeed;
-                otherVirtual.addTrajectoryPoint(newX, other->y);
+                int newX = (*other).x + i * otherSpeed * (1.0f / predictionSteps) * 15; // 调整水平位移计算
+                otherVirtual.addTrajectoryPoint(newX, (*other).y);
             }
         }
 
-        if (virtualCar.isTrajectoryIntersecting(otherVirtual, 30))
+        // 检查轨迹是否相交
+        if (virtualCar.isTrajectoryIntersecting(otherVirtual, predictionSteps))
         {
             return false;
         }
@@ -282,14 +358,17 @@ bool Vehicle::isLaneChangeSafe(int laneHeight, const vector<unique_ptr<Vehicle>>
 }
 
 // 检查与前车距离
-void Vehicle::checkFrontVehicleDistance(vector<unique_ptr<Vehicle>> &allVehicles, int safeDistance)
+void Vehicle::checkFrontVehicleDistance(vector<Vehicle *> &allVehicles, int safeDistance)
 {
-    for (auto &other : allVehicles)
+    // 遍历所有车辆，寻找同一车道的前方车辆
+    for (auto other : allVehicles)
     {
-        if (other.get() == this)
+        // 跳过自己
+        if (other == this)
             continue;
 
-        if (other->lane != lane)
+        // 检查是否在同一车道
+        if ((*other).lane != lane)
             continue;
 
         bool isMovingRight = (lane < 3);
@@ -297,22 +376,26 @@ void Vehicle::checkFrontVehicleDistance(vector<unique_ptr<Vehicle>> &allVehicles
         
         if (isMovingRight)
         {
-            isFrontVehicle = (other->x > x);
+            // 向右行驶，x坐标更大的车是前车
+            isFrontVehicle = ((*other).x > x);
         }
         else
         {
-            isFrontVehicle = (other->x < x);
+            // 向左行驶，x坐标更小的车是前车
+            isFrontVehicle = ((*other).x < x);
         }
 
         if (!isFrontVehicle)
             continue;
 
-        int distance = abs(other->x - x) - (other->carlength / 2 + carlength / 2);
+        // 计算两车之间的距离
+        int distance = abs((*other).x - x) - ((*other).carlength / 2 + carlength / 2);
 
         if ((distance <= safeDistance) && (distance > CRASH_DISTANCE))
         {
             showFlashingFrame();
-            int relativeSpeed = abs(speed - other->speed);
+            // 计算相对速度
+            int relativeSpeed = abs(speed - (*other).speed);
             if (relativeSpeed != 0)
             {
                 cout << "Relative Speed: " << relativeSpeed << endl;
@@ -320,19 +403,20 @@ void Vehicle::checkFrontVehicleDistance(vector<unique_ptr<Vehicle>> &allVehicles
             
             if (relativeSpeed <= WAIT)
             {
+                // 如果相对速度小于等于WAIT，将后车速度设为前车速度
                 if (relativeSpeed > WAIT / 2)
                 {
                     speed = speed - 5;
                 }
                 else
                 {
-                    speed = other->speed;
+                    speed = (*other).speed;
                 }
             }
             if (relativeSpeed > WAIT && relativeSpeed <= CRASH)
             {
                 isGoing2change = true;
-                if (other->speed != 0)
+                if ((*other).speed != 0)
                 {
                     speed = speed / 2;
                 }
@@ -342,12 +426,13 @@ void Vehicle::checkFrontVehicleDistance(vector<unique_ptr<Vehicle>> &allVehicles
         else if (distance <= CRASH_DISTANCE)
         {
             showFlashingFrame();
-            int relativeSpeed = abs(speed - other->speed);
+            // 计算相对速度
+            int relativeSpeed = abs(speed - (*other).speed);
             if (relativeSpeed != 0)
             {
                 cout << "Relative Speed:CRASH " << relativeSpeed << endl;
             }
-            other->handleDangerousSituation();
+            (*other).handleDangerousSituation();
             handleDangerousSituation();
             return;
         }

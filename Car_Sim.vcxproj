@@ -123,12 +123,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BridgeLightingControl.cpp" />
     <ClCompile Include="Car_Function.cpp" />
     <ClCompile Include="Car_Sim.cpp" />
     <ClCompile Include="Function.cpp" />
     <ClCompile Include="VehicleTypes.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BridgeLightingControl.h" />
     <ClInclude Include="Class.h" />
     <ClInclude Include="Define.h" />
     <ClInclude Include="Random.h" />
