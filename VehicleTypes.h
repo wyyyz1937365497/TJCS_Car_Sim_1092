@@ -35,3 +35,4 @@ struct Truck : public Vehicle
     // 重写绘制函数
     void draw() const override;
 };
+#pragma once

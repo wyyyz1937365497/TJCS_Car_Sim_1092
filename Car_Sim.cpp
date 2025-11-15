@@ -419,7 +419,7 @@ int main()
             v->draw();
         }
 
-        Sleep(20);
+        Sleep(40);
         time += 0.2;
     }
 

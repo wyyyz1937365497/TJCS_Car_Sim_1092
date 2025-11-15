@@ -1,11 +1,12 @@
 #include <graphics.h>
 #include <vector>
 #include <ctime>
-#include <conio.h> // 需要包含此头文件_kbhit()函数需要
+#include <conio.h>
 #include <Windows.h>
 #include <sstream>
 #include <string>
 #include <iostream>
+#include <memory>
 
 #include "Random.h"
 #include "Class.h"
@@ -13,7 +14,6 @@
 #include "VehicleTypes.h"
 using namespace std;
 
-// 绘制变道轨迹（红色虚线）
 // 平滑变道函数
 bool Vehicle::smoothLaneChange(int laneHeight, const vector<Vehicle *> &allVehicles)
 {
@@ -177,7 +177,7 @@ bool Vehicle::smoothLaneChange(int laneHeight, const vector<Vehicle *> &allVehic
         }
     }
 
-    // 变道安全，设置目标车道和变道参数
+    // 变道安全，设置参数
     targetLane = tempTargetLane;
     startX = x;
     startY = y;
@@ -193,13 +193,9 @@ bool Vehicle::smoothLaneChange(int laneHeight, const vector<Vehicle *> &allVehic
 // 预测并绘制轨迹
 void Vehicle::predictAndDrawTrajectory(int laneHeight, int middleY, int predictionSteps, const vector<Vehicle *> &allVehicles) const
 {
-    // 创建虚拟车辆
     VirtualVehicle virtualCar(x, y, carlength, carwidth);
-
-    // 添加当前位置
     virtualCar.addTrajectoryPoint(x, y);
 
-    // 预测未来轨迹
     int currentX = x;
     int currentY = y;
     int currentSpeed = (y < middleY) ? speed : -speed;
@@ -224,7 +220,6 @@ void Vehicle::predictAndDrawTrajectory(int laneHeight, int middleY, int predicti
         }
     }
 
-    // 检查与其他车辆的轨迹是否相交
     bool isSafe = true;
     for (const auto other : allVehicles)
     {
@@ -250,8 +245,6 @@ void Vehicle::predictAndDrawTrajectory(int laneHeight, int middleY, int predicti
         }
     }
 
-    // 绘制轨迹，根据车辆状态使用不同颜色
-    // 直行时使用蓝色，准备变道或正在变道时使用红色
     bool useBlueColor = !isChangingLane && !isGoing2change;
     virtualCar.drawTrajectory(useBlueColor);
 }
@@ -259,13 +252,11 @@ void Vehicle::predictAndDrawTrajectory(int laneHeight, int middleY, int predicti
 // 检查变道是否安全
 bool Vehicle::isLaneChangeSafe(int laneHeight, const vector<Vehicle *> &allVehicles) const
 {
-    // 如果已经变道或不在变道点，返回安全
     if (haschanged)
     {
         return true;
     }
 
-    // 确定目标车道
     int target = 0;
     if (lane == 0 || lane == 3)
     {
@@ -280,13 +271,9 @@ bool Vehicle::isLaneChangeSafe(int laneHeight, const vector<Vehicle *> &allVehic
         target = lane + (rand() % 2 ? 1 : -1);
     }
 
-    // 创建虚拟车辆用于轨迹预测
     VirtualVehicle virtualCar(x, y, carlength, carwidth);
-
-    // 添加当前位置
     virtualCar.addTrajectoryPoint(x, y);
 
-    // 预测变道轨迹
     int currentX = x;
     int currentY = y;
     int targetY = laneHeight * target + (int)(0.5 * laneHeight);
@@ -363,11 +350,11 @@ bool Vehicle::isLaneChangeSafe(int laneHeight, const vector<Vehicle *> &allVehic
         // 检查轨迹是否相交
         if (virtualCar.isTrajectoryIntersecting(otherVirtual, predictionSteps))
         {
-            return false; // 轨迹相交，变道不安全
+            return false;
         }
     }
 
-    return true; // 轨迹不相交，变道安全
+    return true;
 }
 
 // 检查与前车距离
@@ -384,11 +371,9 @@ void Vehicle::checkFrontVehicleDistance(vector<Vehicle *> &allVehicles, int safe
         if ((*other).lane != lane)
             continue;
 
-        // 判断方向：上方车道(0,1,2)向右行驶，下方车道(3,4,5)向左行驶
         bool isMovingRight = (lane < 3);
-
-        // 检查是否为前方车辆
         bool isFrontVehicle = false;
+        
         if (isMovingRight)
         {
             // 向右行驶，x坐标更大的车是前车
@@ -406,7 +391,6 @@ void Vehicle::checkFrontVehicleDistance(vector<Vehicle *> &allVehicles, int safe
         // 计算两车之间的距离
         int distance = abs((*other).x - x) - ((*other).carlength / 2 + carlength / 2);
 
-        // 如果距离小于等于安全距离，进行进一步处理
         if ((distance <= safeDistance) && (distance > CRASH_DISTANCE))
         {
             showFlashingFrame();
@@ -416,7 +400,7 @@ void Vehicle::checkFrontVehicleDistance(vector<Vehicle *> &allVehicles, int safe
             {
                 cout << "Relative Speed: " << relativeSpeed << endl;
             }
-            // 根据相对速度采取不同措施
+            
             if (relativeSpeed <= WAIT)
             {
                 // 如果相对速度小于等于WAIT，将后车速度设为前车速度
@@ -437,7 +421,7 @@ void Vehicle::checkFrontVehicleDistance(vector<Vehicle *> &allVehicles, int safe
                     speed = speed / 2;
                 }
             }
-            return; // 找到最近的前车后即可返回
+            return;
         }
         else if (distance <= CRASH_DISTANCE)
         {
@@ -450,7 +434,7 @@ void Vehicle::checkFrontVehicleDistance(vector<Vehicle *> &allVehicles, int safe
             }
             (*other).handleDangerousSituation();
             handleDangerousSituation();
-            return; // 找到最近的前车后即可返回
+            return;
         }
     }
 }
@@ -458,20 +442,16 @@ void Vehicle::checkFrontVehicleDistance(vector<Vehicle *> &allVehicles, int safe
 // 显示橘色线框
 void Vehicle::showFlashingFrame()
 {
-    // 保存当前线型和颜色
     LINESTYLE oldLineStyle;
     getlinestyle(&oldLineStyle);
     COLORREF oldLineColor = getlinecolor();
 
-    // 设置橘色线框
-    setlinecolor(RGB(255, 165, 0)); // 橙色
-    setlinestyle(PS_SOLID, 2);      // 实线，线宽为2
+    setlinecolor(RGB(255, 165, 0));
+    setlinestyle(PS_SOLID, 2);
 
-    // 绘制车辆周围的橘色线框
     rectangle(x - carlength / 2 - 5, y - carwidth / 2 - 5,
               x + carlength / 2 + 5, y + carwidth / 2 + 5);
 
-    // 恢复原来的线型和颜色
     setlinestyle(oldLineStyle.style, oldLineStyle.thickness);
     setlinecolor(oldLineColor);
 }
@@ -479,8 +459,6 @@ void Vehicle::showFlashingFrame()
 // 处理危险情况
 void Vehicle::handleDangerousSituation()
 {
-    // 设置车辆为抛锚状态
     isBrokenDown = true;
-    // 将车辆速度设为0
     speed = 0;
 }
