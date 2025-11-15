@@ -43,19 +43,6 @@ Sedan::Sedan(int lane, int carlength, int carwidth, int x, int y, int speed)
     color = generateVehicleColor(); // 设置随机颜色
 }
 
-bool Sedan::smoothLaneChange(int laneHeight, const std::vector<Vehicle*>& allVehicles)
-{
-    changeProgress += 0.08f; // 小轿车变道更快
-    if (changeProgress >= 1.0f)
-    {
-        y = endY;
-        isChangingLane = false;
-        return true;
-    }
-    y = static_cast<int>(startY + (endY - startY) * changeProgress);
-    return false;
-}
-
 int Sedan::getSafeDistance() const
 {
     return SAFE_DISTANCE * 0.8;  // 比标准安全距离短20%
@@ -260,19 +247,6 @@ void Sedan::draw() const
 SUV::SUV(int lane, int carlength, int carwidth, int x, int y, int speed)
     : Vehicle(lane, carlength, carwidth, x, y, speed) {
     color = generateVehicleColor(); // 设置随机颜色
-}
-
-bool SUV::smoothLaneChange(int laneHeight, const std::vector<Vehicle*>& allVehicles)
-{
-    changeProgress += 0.05f;
-    if (changeProgress >= 1.0f)
-    {
-        y = endY;
-        isChangingLane = false;
-        return true;
-    }
-    y = static_cast<int>(startY + (endY - startY) * changeProgress);
-    return false;
 }
 
 int SUV::getSafeDistance() const
@@ -494,19 +468,6 @@ void SUV::draw() const
 Truck::Truck(int lane, int carlength, int carwidth, int x, int y, int speed)
     : Vehicle(lane, carlength, carwidth, x, y, speed) {
     color = generateVehicleColor(); // 设置随机颜色
-}
-
-bool Truck::smoothLaneChange(int laneHeight, const std::vector<Vehicle*>& allVehicles)
-{
-    changeProgress += 0.03f;
-    if (changeProgress >= 1.0f)
-    {
-        y = endY;
-        isChangingLane = false;
-        return true;
-    }
-    y = static_cast<int>(startY + (endY - startY) * changeProgress);
-    return false;
 }
 
 int Truck::getSafeDistance() const

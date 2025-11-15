@@ -15,22 +15,21 @@
 #include "BridgeLightingControl.h"
 using namespace std;
 
-
 int main()
 {
     Bridge bridge;
     bridge.bridgeLength = 100;
     bridge.bridgeWidth = 50;
     bridge.widthScale = 1;
-    
+
     int windowWidth, windowHeight;
     double scale;
     bridge.calculateWindowSize(windowWidth, windowHeight, scale);
 
-    vector<Vehicle*> vehicles;
+    vector<Vehicle *> vehicles;
     srand(unsigned int(time(0)));
     double time = 0;
-    
+
     normal_distribution<> normalwidth(3, 0.1);
     normal_distribution<> normallength(6, 0.1);
     uniform_int_distribution<int> int_dist(20, 120);
@@ -81,8 +80,8 @@ int main()
 
         // 显示桥的参数信息（放在顶部 bar 左侧）
         wchar_t info[256];
-        swprintf_s(info, L"桥长： %.0fm  桥宽：%.0fm  桥宽放大率： %.1f", 
-                  bridge.bridgeLength, bridge.bridgeWidth, bridge.widthScale);
+        swprintf_s(info, L"桥长： %.0fm  桥宽：%.0fm  桥宽放大率： %.1f",
+                   bridge.bridgeLength, bridge.bridgeWidth, bridge.widthScale);
         settextstyle(20, 0, L"Arial");
         settextcolor(WHITE);
         setbkmode(TRANSPARENT);
@@ -150,7 +149,7 @@ int main()
             settextstyle((int)(laneHeight / 2), 0, L"Arial");
             settextcolor(WHITE);
             setbkmode(TRANSPARENT);
-            outtextxy(buttonX + 10, buttonY, i < laneCount / 2 ? L"→" : L"←");
+            outtextxy(buttonX + 10, buttonY, i < laneCount / 2 ? L"\u2192" : L"\u2190");
         }
     };
 
@@ -247,13 +246,13 @@ int main()
             int newY = topBarHeight + laneHeight * lane + (int)(0.5 * laneHeight);
             bool isPositionSafe = true;
 
-            for (const auto& existingVehicle : vehicles)
+            for (const auto &existingVehicle : vehicles)
             {
                 if (existingVehicle->lane != lane)
                     continue;
 
-                int distance = abs(existingVehicle->x - newX) - 
-                             (existingVehicle->carlength / 2 + carlength / 2);
+                int distance = abs(existingVehicle->x - newX) -
+                               (existingVehicle->carlength / 2 + carlength / 2);
 
                 if (distance < SAFE_DISTANCE)
                 {
@@ -265,8 +264,8 @@ int main()
             if (isPositionSafe)
             {
                 int vehicleType = rand() % 3;
-                Vehicle* newVehicle = nullptr;
-                
+                Vehicle *newVehicle = nullptr;
+
                 if (vehicleType == 0)
                 {
                     newVehicle = new Sedan(
@@ -297,8 +296,9 @@ int main()
                         newY,
                         (int)rng.generate());
                 }
-                
-                if (newVehicle) {
+
+                if (newVehicle)
+                {
                     vehicles.push_back(newVehicle);
                 }
             }
@@ -310,15 +310,19 @@ int main()
         // 收集需要立即移除的车辆（避免车辆进入 control bar）
         vector<Vehicle*> removeNow;
 
-        for (auto& v : vehicles)
+        for (auto &v : vehicles)
         {
             COLORREF originalColor = v->color;
             if (v->speed == 0)
             {
                 v->handleDangerousSituation();
             }
+
+            // 只有在非变道状态下才调用moveForward函数
+            if (!v->isChangingLane) {
+                v->moveForward(middleY);
+            }
             
-            v->moveForward(middleY);
             v->checkFrontVehicleDistance(vehicles, v->getSafeDistance());
 
             if (v->isGoing2change)
@@ -344,8 +348,8 @@ int main()
 
                     if (isFrontVehicle)
                     {
-                        int distance = abs(other->x - v->x) - 
-                                     (other->carlength / 2 + v->carlength / 2);
+                        int distance = abs(other->x - v->x) -
+                                       (other->carlength / 2 + v->carlength / 2);
                         if (distance <= SAFE_DISTANCE)
                         {
                             stillTooClose = true;
@@ -397,16 +401,25 @@ int main()
         // 备份删除逻辑：如果有意外的车辆坐标超出左右极限，仍进行清理
         vehicles.erase(
             remove_if(vehicles.begin(), vehicles.end(),
-                [roadWidth](Vehicle* v) {
-                    if (v->x < -300 || v->x > roadWidth + 300) {
-                        delete v;
-                        return true;
-                    }
-                    return false;
-                }),
+                      [windowWidth](Vehicle *v)
+                      {
+                          if (v->x < 0 || v->x > windowWidth)
+                          {
+                              delete v; // 释放内存
+                              return true;
+                          }
+                          return false;
+                      }),
             vehicles.end());
+        // 绘制车辆
+        for (const auto &v : vehicles)
+        {
+            v->predictAndDrawTrajectory(laneHeight, windowHeight / 2, 30, vehicles);
 
-        Sleep(60);
+            v->draw();
+        }
+
+        Sleep(20);
         time += 0.2;
     }
 
