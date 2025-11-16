@@ -1,12 +1,14 @@
-﻿#include "VehicleStatistics.h"
+#include "VehicleStatistics.h"
 #include "Class.h"
 #include "VehicleTypes.h"
 #include <iostream>
 #include <fstream>
 #include <algorithm>
 #include <iomanip>
+#include <direct.h>  // For _mkdir on Windows
 
-VehicleStatistics::VehicleStatistics() : lastSafeDistance(-1), lastStoppingSpeed(-1), currentTime(0.0)
+VehicleStatistics::VehicleStatistics() : lastSafeDistance(-1), lastStoppingSpeed(-1), 
+                                       lastVehicleCount(-1), lastBreakdownCount(-1), currentTime(0.0)
 {
 }
 
@@ -34,22 +36,26 @@ void VehicleStatistics::checkAndRecordParameters(double time, int safeDist, int 
 {
     currentTime = time;
 
-    // 检查参数是否发生变化
+    // 检查参数是否发生变化或者车辆数量发生变化（考虑车辆被删除的情况）
+    int breakdownCount = 0;
+    for (const auto &vehicle : vehicles)
+    {
+        if (vehicle->isBrokenDown)
+        {
+            breakdownCount++;
+        }
+    }
+    
+    // 只有当关键参数发生变化时才记录，时间和车辆总数变化不应导致记录中断
+    // 关键参数包括：安全距离、减速度
+    // 其他参数（如车辆总数、故障车辆数）的变化不影响记录的连续性
     if (safeDist != lastSafeDistance || stopSpeed != lastStoppingSpeed)
     {
         // 记录当前参数
         lastSafeDistance = safeDist;
         lastStoppingSpeed = stopSpeed;
-
-        // 统计当前车辆中的抛锚车辆数
-        int breakdownCount = 0;
-        for (const auto &vehicle : vehicles)
-        {
-            if (vehicle->isBrokenDown)
-            {
-                breakdownCount++;
-            }
-        }
+        lastVehicleCount = static_cast<int>(vehicles.size());
+        lastBreakdownCount = breakdownCount;
 
         // 创建新的记录
         ParameterRecord record;
@@ -62,10 +68,14 @@ void VehicleStatistics::checkAndRecordParameters(double time, int safeDist, int 
 
         parameterRecords.push_back(record);
     }
+    // 如果仅仅是时间或车辆数量变化，不创建新的记录条目，保持当前记录连续性
 }
 
 void VehicleStatistics::saveVehicleProbabilityStatistics() const
 {
+    // 确保log目录存在
+    _mkdir("./log");
+    
     std::ofstream file("./log/vehicle_probability_statistics.csv");
     if (!file.is_open())
     {
@@ -101,6 +111,9 @@ void VehicleStatistics::saveVehicleProbabilityStatistics() const
 
 void VehicleStatistics::saveBreakdownRateStatistics() const
 {
+    // 确保log目录存在
+    _mkdir("./log");
+    
     std::ofstream file("./log/breakdown_rate_statistics.csv");
     if (!file.is_open())
     {

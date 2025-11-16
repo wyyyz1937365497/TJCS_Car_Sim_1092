@@ -38,6 +38,8 @@ private:
     std::vector<ParameterRecord> parameterRecords;
     int lastSafeDistance;
     int lastStoppingSpeed;
+    int lastVehicleCount;      // 上次记录时的车辆总数
+    int lastBreakdownCount;    // 上次记录时的故障车辆数
     double currentTime;
 
 public:

@@ -756,7 +756,7 @@ int main()
         delete v;
     }
     vehicles.clear();
-
+    vehicleStats.saveAllStatistics();
     closegraph();
     return 0;
 }
