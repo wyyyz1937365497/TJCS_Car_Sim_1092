@@ -63,8 +63,9 @@ struct Vehicle
     // 检查与前车距离
     void checkFrontVehicleDistance(vector<Vehicle *> &allVehicles,int safeDistance,int laneHeight);
 
-    // 显示闪烁的橘色线框
-    void showFlashingFrame();
+    // 显示闪烁的橘色/蓝色线框
+    // 参数 isAttempting == true 时绘制蓝色（表示正在尝试变道），否则绘制橘色（表示接近/警告）
+    void showFlashingFrame(bool isAttempting = false);
     // 处理危险情况
     void handleDangerousSituation();
     // 前向运动函数

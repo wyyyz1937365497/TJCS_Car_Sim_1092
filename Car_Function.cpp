@@ -253,7 +253,64 @@ void Vehicle::predictAndDrawTrajectory(int laneHeight, int middleY, int predicti
     }
 
     bool useBlueColor = !isChangingLane && !isGoing2change;
-    virtualCar.drawTrajectory(useBlueColor);
+
+    // --- 替换原先直接调用 virtualCar.drawTrajectory 的行为 ---
+    // 在这里我们自己绘制轨迹线段，并确保不在右侧 control bar（宽度 60）上绘制。
+    // 采用与 UI 一致的右侧 control bar 宽度 60（Car_Sim.cpp 中定义）作为屏蔽区域宽度。
+    const int controlBarWidth = 60;
+    int rightLimit = getwidth() - controlBarWidth; // 轨迹绘制的最大 x 值（不允许超过此值绘制到 control bar）
+
+    // 轨迹颜色
+    COLORREF trajColor = useBlueColor ? RGB(0, 120, 215) : RGB(180, 180, 180);
+    COLORREF oldColor = getlinecolor();
+    LINESTYLE oldStyle;
+    getlinestyle(&oldStyle);
+
+    setlinecolor(trajColor);
+    setlinestyle(PS_SOLID, 2);
+
+    const auto &traj = virtualCar.trajectory;
+    if (traj.size() >= 2)
+    {
+        for (size_t i = 1; i < traj.size(); ++i)
+        {
+            double x0 = traj[i - 1].first;
+            double y0 = traj[i - 1].second;
+            double x1 = traj[i].first;
+            double y1 = traj[i].second;
+
+            // 如果整段都在 control bar 右侧，跳过
+            if (x0 >= rightLimit && x1 >= rightLimit)
+                continue;
+
+            // 若线段部分越过 rightLimit，则计算交点并裁切
+            if (x0 < rightLimit && x1 > rightLimit)
+            {
+                double t = (double)(rightLimit - x0) / (double)(x1 - x0);
+                double newY1 = y0 + (y1 - y0) * t;
+                x1 = rightLimit;
+                y1 = (int)round(newY1);
+            }
+            else if (x0 > rightLimit && x1 < rightLimit)
+            {
+                double t = (double)(rightLimit - x1) / (double)(x0 - x1);
+                double newY0 = y1 + (y0 - y1) * t;
+                x0 = rightLimit;
+                y0 = (int)round(newY0);
+            }
+
+            // 再次检查：若裁切后点相等或非法则跳过
+            if ((int)round(x0) == (int)round(x1) && (int)round(y0) == (int)round(y1))
+                continue;
+
+            // 只绘制在道路区域内的线段
+            line((int)round(x0), (int)round(y0), (int)round(x1), (int)round(y1));
+        }
+    }
+
+    // 恢复画笔状态
+    setlinestyle(oldStyle.style, oldStyle.thickness);
+    setlinecolor(oldColor);
 }
 
 // 检查变道是否安全
@@ -404,36 +461,39 @@ void Vehicle::checkFrontVehicleDistance(vector<Vehicle *> &allVehicles, int safe
 
         if ((distance <= safeDistance) && (distance > CRASH_DISTANCE))
         {
-            showFlashingFrame();
-            // 计算相对速度
+            // 先计算相对速度以决定是否尝试变道
             int relativeSpeed = abs(speed - (*other).speed);
-            if (relativeSpeed != 0)
-            {
-                cout << "Relative Speed: " << relativeSpeed << endl;
-            }
+            bool willAttempt = false;
 
             if (relativeSpeed <= WAIT)
             {
                 if (((*other).isBrokenDown))
                 {
+                    willAttempt = true;
                     isGoing2change = true;
                 }
                 else
                 {
-                    // 如果相对速度小于等于WAIT，将后车速度设为前车速度
+                    // 如果相对速度小于等于WAIT，将后车速度设为前车速度（减速）
                     speed = speed - stoppingSpeed;
                 }
             }
             else if ((relativeSpeed > WAIT) && (relativeSpeed <= CRASH))
             {
-                cout << "尝试变道" << endl; 
+                // 相对速度在可尝试变道区间
+                willAttempt = true;
                 isGoing2change = true;
             }
+
+            // 根据上面判断绘制闪烁框（蓝色表示尝试变道，橘色表示普通接近警告）
+            showFlashingFrame(willAttempt);
+
             return;
         }
         else if (distance <= CRASH_DISTANCE)
         {
-            showFlashingFrame();
+            // 非常近，显示橘色框并处理危险情况
+            showFlashingFrame(false);
             (*other).handleDangerousSituation();
             handleDangerousSituation();
             return;
@@ -441,14 +501,19 @@ void Vehicle::checkFrontVehicleDistance(vector<Vehicle *> &allVehicles, int safe
     }
 }
 
-// 显示橘色线框
-void Vehicle::showFlashingFrame()
+// 显示橘色/蓝色线框
+void Vehicle::showFlashingFrame(bool isAttempting)
 {
     LINESTYLE oldLineStyle;
     getlinestyle(&oldLineStyle);
     COLORREF oldLineColor = getlinecolor();
 
-    setlinecolor(RGB(255, 165, 0));
+    // 尝试变道时使用蓝色框；否则使用橘色（接近/警告）
+    if (isAttempting)
+        setlinecolor(RGB(0, 120, 215)); // 蓝色
+    else
+        setlinecolor(RGB(255, 165, 0)); // 橘色
+
     setlinestyle(PS_SOLID, 2);
 
     rectangle(x - carlength / 2 - 5, y - carwidth / 2 - 5,
