@@ -88,35 +88,28 @@ void WeatherEffectManager::update()
             }
         }
     }
-    else if (currentWeather == SNOW)
-    {
+    else if (currentWeather == SNOW) {
         // 绘制雪花
         setfillcolor(WHITE);
         setlinecolor(WHITE);
-        for (int i = 0; i < SNOW_COUNT; ++i)
-        {
+        for (int i = 0; i < SNOW_COUNT; ++i) {
             snow[i].y += 1.5;
             snow[i].x += (rand() % 3 - 1);
 
-            if (snow[i].y > windowHeight)
-            {
+            if (snow[i].y > windowHeight) {
                 snow[i].y = 80; // 从顶部菜单栏下方重新开始
                 snow[i].x = rand() % windowWidth;
             }
-
-            if (snow[i].y < 80)
-            {
-                snow[i].y = 80; // 确保雪花不会进入菜单栏区域
+            
+            if (snow[i].y < 90) {
+                snow[i].y = 90; // 确保雪花不会进入菜单栏区域
             }
 
-            if (snow[i].x < 0)
-                snow[i].x = 0;
-            if (snow[i].x > windowWidth)
-                snow[i].x = windowWidth;
+            if (snow[i].x < 0) snow[i].x = 0;
+            if (snow[i].x > windowWidth) snow[i].x = windowWidth;
 
             // 只在道路区域绘制雪花，避开顶部菜单栏
-            if (snow[i].y >= 80)
-            {
+            if (snow[i].y >= 90) {
                 fillcircle((int)snow[i].x, (int)snow[i].y, 2);
             }
         }
