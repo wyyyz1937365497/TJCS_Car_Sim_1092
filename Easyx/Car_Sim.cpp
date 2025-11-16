@@ -65,7 +65,7 @@ int main()
     WeatherEffectManager weatherManager(roadWidth, windowHeight);
 
     // 当前时间（白天/黑夜）
-    TimeOfDay currentTime = TimeOfDay::Night; // 保持默认黑夜显示
+    TimeOfDay currentTime = TimeOfDay::Day; // 保持默认黑夜显示
 
     // 天气按钮尺寸与居中位置（在顶部 bar 的中间）
     const int btnWidth = 80;
@@ -150,18 +150,6 @@ int main()
         settextcolor(WHITE);
         setbkmode(TRANSPARENT);
         outtextxy(10, (topBarHeight - 5) / 2, info);
-
-        // 显示时间（放在桥面右上角）
-        wchar_t info2[256];
-        swprintf_s(info2, L"时间： %.0fs", time);
-        settextstyle(20, 0, L"Arial");
-        outtextxy(roadWidth - 160, topBarHeight + 10, info2);
-
-        // 显示流明（照度）在顶部 bar（靠近时间左侧）
-        wchar_t luxText[128];
-        swprintf_s(luxText, L"照度: %.2f lux", currentIlluminance);
-        settextstyle(14, 0, L"Arial");
-        outtextxy(roadWidth - 360, topBarHeight + 12, luxText);
 
         // 显示当前天气状态（在天气按钮上方，居中）
         wchar_t weatherInfo[128];
@@ -276,8 +264,10 @@ int main()
         outtextxy(stopSpeedCtrlStartX + ctrlBtnWidth + ctrlBtnSpacing + 5, stopSpeedCtrlStartY + 5, L"速-");
 
         wchar_t statusText[256];
-        swprintf_s(statusText, L"生成频率:%d 探测距离:%d 减速度:%d", vehicleGenerationFrequency, safeDistance, stoppingSpeed);
+        swprintf_s(statusText, L"生成频率:%d 探测距离:%d 减速度:%d 照度: %.2f lux", vehicleGenerationFrequency, safeDistance, stoppingSpeed, currentIlluminance);
         outtextxy(stopSpeedCtrlStartX + 2 * ctrlBtnWidth + ctrlBtnSpacing + 10, stopSpeedCtrlStartY + 5, statusText);
+        // 显示流明（照度）在顶部 bar（靠近时间左侧）
+
 
         // 右侧抛锚清除按钮
         int laneCount = 6;
@@ -303,13 +293,13 @@ int main()
     // Helper: 将 WeatherMode + currentTime 映射到 BridgeLightingControl::WeatherCondition
     auto mapToWeatherCondition = [&](WeatherMode wm, TimeOfDay tod) -> WeatherCondition {
         if (wm == RAIN) {
-            return (tod == TimeOfDay::Day) ? WeatherCondition::ModerateRain : WeatherCondition::RainyNight;
+            return (tod == TimeOfDay::Day) ? WeatherCondition::Rain : WeatherCondition::RainNight;
         }
         else if (wm == SNOW) {
-            return (tod == TimeOfDay::Day) ? WeatherCondition::Overcast : WeatherCondition::CloudyNight;
+            return (tod == TimeOfDay::Day) ? WeatherCondition::Snow : WeatherCondition::SnowNight;
         }
         else { // NOTHING
-            return (tod == TimeOfDay::Day) ? WeatherCondition::Sunny : WeatherCondition::ClearNight;
+            return (tod == TimeOfDay::Day) ? WeatherCondition::Sunny : WeatherCondition::SunnyNight;
         }
     };
 
@@ -317,23 +307,43 @@ int main()
     auto applyWeatherToSafety = [&](WeatherMode wm, TimeOfDay tod) {
         try {
             WeatherCondition cond = mapToWeatherCondition(wm, tod);
-            EnvironmentConfig cfg = BridgeTrafficController::getEnvironmentConfig(tod, cond);
+            double illuminance_lux = BridgeTrafficController::getEnvironmentConfig(tod, cond);
 
             // 保存当前照度用于 UI 显示
-            currentIlluminance = cfg.illuminance_lux;
+            currentIlluminance = illuminance_lux;
 
-            // 使用照度线性缩放 safeDistance（照度越强，distance 越大）
-            const double referenceLux = 100000.0;   // Sunny 白天的近似参考值
-            const double referenceMeters = 50.0;    // SAFE_DISTANCE 对应的米数参考
-            const double minMeters = 5.0;           // 最小可见距离（米）
-            const double maxMeters = 200.0;         // 最大可见距离（米）－防止异常放大
+            // 根据照度调整 safeDistance（照度越强，可视距离越大）
+            // 参考标准：
+            // 白天晴天 (100000 lux) -> 最大可视距离
+            // 夜晚晴天 (10000 lux)  -> 中等可视距离
+            // 夜晚雨天 (6000 lux)   -> 较低可视距离
+            // 白天雨天 (20000 lux)  -> 中等偏上可视距离
+            // 夜晚雪天 (2000 lux)   -> 很低可视距离
+            // 白天雪天 (60000 lux)  -> 中等偏上可视距离
+            
+            double scaledMeters;
+            if (illuminance_lux >= 100000.0) {
+                // 白天晴天 - 最佳能见度
+                scaledMeters = 1200.0;
+            } else if (illuminance_lux >= 60000.0) {
+                // 白天雪天 - 中等能见度
+                scaledMeters = 400.0;
+            } else if (illuminance_lux >= 20000.0) {
+                // 白天雨天 - 良好能见度
+                scaledMeters = 800.0;
+            } else if (illuminance_lux >= 10000.0) {
+                // 夜晚晴天 - 中等偏低能见度
+                scaledMeters = 200.0;
+            } else if (illuminance_lux >= 6000.0) {
+                // 夜晚雨天 - 低能见度
+                scaledMeters = 100.0;
+            } else {
+                // 夜晚雪天 - 极低能见度
+                scaledMeters = 50.0;
+            }
 
-            double scaledMeters = referenceMeters * (cfg.illuminance_lux / referenceLux);
-            if (scaledMeters < minMeters) scaledMeters = minMeters;
-            if (scaledMeters > maxMeters) scaledMeters = maxMeters;
-
-            int envSafePixels = (int)round(scaledMeters * SAFE_DISTANCE / referenceMeters);
-            safeDistance = max(100, min(2000, envSafePixels));
+            
+            safeDistance = scaledMeters;
 
             // stoppingSpeed 仅受天气影响（白天/夜晚不影响减速度）
             const int baseStopping = 15;
@@ -622,6 +632,11 @@ int main()
                 int arrowY = topBarHeight + laneHeight * i + (int)(0.5 * laneHeight) - (int)(laneHeight / 4);
                 outtextxy(5, arrowY, i < laneCount / 2 ? L"→" : L"←");
             }
+            // 显示时间（放在桥面右上角）
+            wchar_t info2[256];
+            swprintf_s(info2, L"时间： %.0fs", time);
+            settextstyle(20, 0, L"Arial");
+            outtextxy(roadWidth - 160, topBarHeight + 10, info2);
 
             v->predictAndDrawTrajectory(laneHeight, (windowHeight + topBarHeight) / 2, 30, vehicles);
             v->draw();
