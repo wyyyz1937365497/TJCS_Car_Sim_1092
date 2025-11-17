@@ -92,7 +92,7 @@
 2. 小组共同讨论各模块接口定义
 3. 组员分别fork分支进行开发：
    - wyyyz：实现Vehicle基类与CarFunction.cpp
-   - Mike_zhuang：实现VehicleTypes.cpp与VehicleTypes.h
+   - Mike-Zhuang：实现VehicleTypes.cpp与VehicleTypes.h
    - soupping与lizhengsheng：实现BridgeLightingControl.cpp与BridgeLightingControl.h
 4. 由wyyyz实现主函数Car_Sim.cpp并合并分支
 
