@@ -1,11 +1,7 @@
 ﻿#include <graphics.h>
 #include <vector>
 #include <ctime>
-#include <conio.h>
 #include <Windows.h>
-#include <sstream>
-#include <string>
-#include <iostream>
 #include <algorithm>
 
 #include "Random.h"

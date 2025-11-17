@@ -5,6 +5,8 @@
 x64/
 Release/
 log/
+build/
+Car_Sim_Qt/out/
 # Compiled Object files
 *.slo
 *.lo
