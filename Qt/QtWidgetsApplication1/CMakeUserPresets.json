@@ -6,11 +6,7 @@
       "displayName": "Debug (x64)",
       "binaryDir": "${sourceDir}/out/build/debug",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_CXX_FLAGS": "-DQT_QML_DEBUG"
-      },
-      "environment": {
-        "QML_DEBUG_ARGS": "-qmljsdebugger=file:{ef06c612-81d8-4c61-88b0-0ca9e50948e3},block"
+        "CMAKE_BUILD_TYPE": "Debug"
       },
       "inherits": [
         "Qt-Default"
@@ -58,7 +54,7 @@
   ],
   "vendor": {
     "qt-project.org/Presets": {
-      "checksum": "MYn3qXMNgE4mjSGcyNEQeQBuzGc="
+      "checksum": "G9kXpJ4C2BasjfgxRV6wFIIcLl8="
     }
   }
 }

@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>QtWidgetsApplication1Class</class>
+ <widget class="QWidget" name="QtWidgetsApplication1Class">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1200</width>
+    <height>800</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>车辆模拟系统</string>
+  </property>
+  <widget class="QPushButton" name="freqPlus">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>60</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>频+</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="freqMinus">
+   <property name="geometry">
+    <rect>
+     <x>75</x>
+     <y>10</y>
+     <width>60</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>频-</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="distPlus">
+   <property name="geometry">
+    <rect>
+     <x>180</x>
+     <y>10</y>
+     <width>60</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>距+</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="distMinus">
+   <property name="geometry">
+    <rect>
+     <x>245</x>
+     <y>10</y>
+     <width>60</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>距-</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="speedPlus">
+   <property name="geometry">
+    <rect>
+     <x>350</x>
+     <y>10</y>
+     <width>60</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>速+</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="speedMinus">
+   <property name="geometry">
+    <rect>
+     <x>415</x>
+     <y>10</y>
+     <width>60</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>速-</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="normalButton">
+   <property name="geometry">
+    <rect>
+     <x>550</x>
+     <y>25</y>
+     <width>80</width>
+     <height>35</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>正常</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="rainButton">
+   <property name="geometry">
+    <rect>
+     <x>640</x>
+     <y>25</y>
+     <width>80</width>
+     <height>35</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>下雨</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="snowButton">
+   <property name="geometry">
+    <rect>
+     <x>730</x>
+     <y>25</y>
+     <width>80</width>
+     <height>35</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>下雪</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="dayButton">
+   <property name="geometry">
+    <rect>
+     <x>850</x>
+     <y>25</y>
+     <width>60</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>白天</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="nightButton">
+   <property name="geometry">
+    <rect>
+     <x>920</x>
+     <y>25</y>
+     <width>60</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>黑夜</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="exitButton">
+   <property name="geometry">
+    <rect>
+     <x>1130</x>
+     <y>25</y>
+     <width>60</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>退出</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="clearLane0">
+   <property name="geometry">
+    <rect>
+     <x>1140</x>
+     <y>100</y>
+     <width>40</width>
+     <height>100</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>X</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="clearLane1">
+   <property name="geometry">
+    <rect>
+     <x>1140</x>
+     <y>210</y>
+     <width>40</width>
+     <height>100</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>X</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="clearLane2">
+   <property name="geometry">
+    <rect>
+     <x>1140</x>
+     <y>320</y>
+     <width>40</width>
+     <height>100</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>X</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="clearLane3">
+   <property name="geometry">
+    <rect>
+     <x>1140</x>
+     <y>430</y>
+     <width>40</width>
+     <height>100</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>X</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="clearLane4">
+   <property name="geometry">
+    <rect>
+     <x>1140</x>
+     <y>540</y>
+     <width>40</width>
+     <height>100</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>X</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="clearLane5">
+   <property name="geometry">
+    <rect>
+     <x>1140</x>
+     <y>650</y>
+     <width>40</width>
+     <height>100</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>X</string>
+   </property>
+  </widget>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <resources/>
+ <connections/>
+</ui>
