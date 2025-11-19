@@ -229,6 +229,7 @@ private:
     // 私有方法
     void initializeSimulation();
     void drawUI(QPainter &painter);
+    void drawWeatherEffect(QPainter &painter, const QColor &backgroundColor);
     void generateNewVehicle();
     void updateVehicles();
     void removeOffScreenVehicles();

@@ -868,7 +868,13 @@ void QtWidgetsApplication1::paintEvent(QPaintEvent *event)
     painter.setRenderHint(QPainter::Antialiasing, true);
 
     // 绘制道路背景（根据时间变化）
-    painter.fillRect(0, topBarHeight, roadWidth, windowHeight - topBarHeight, getBackgroundColor());
+    QColor backgroundColor = getBackgroundColor();
+    painter.fillRect(0, topBarHeight, roadWidth, windowHeight - topBarHeight, backgroundColor);
+
+    // 绘制下雨或下雪效果
+    if (currentWeather == RAIN || currentWeather == SNOW) {
+        drawWeatherEffect(painter, backgroundColor);
+    }
 
     // 绘制车道线
     painter.setPen(QPen(Qt::white, 1, Qt::DashLine));
@@ -1030,11 +1036,29 @@ QColor QtWidgetsApplication1::getBackgroundColor() const
     // 根据当前时间设置背景色
     if (currentTime == TimeOfDay::Day)
     {
-        return QColor(100, 100, 100); // 白天为灰色
+        // 白天根据天气设置背景色
+        switch (currentWeather)
+        {
+        case RAIN:
+            return QColor(150, 150, 160); // 雨天的灰蓝色
+        case SNOW:
+            return QColor(200, 200, 210); // 雪天的灰白色
+        default:
+            return QColor(100, 100, 100); // 晴天为灰色
+        }
     }
     else
     {
-        return QColor(0, 0, 0); // 夜晚为黑色
+        // 夜晚根据天气设置背景色
+        switch (currentWeather)
+        {
+        case RAIN:
+            return QColor(30, 30, 40); // 雨夜为深蓝灰色
+        case SNOW:
+            return QColor(40, 40, 50); // 雪夜为深灰白色
+        default:
+            return QColor(0, 0, 0); // 晴夜为黑色
+        }
     }
 }
 
@@ -1095,10 +1119,12 @@ void QtWidgetsApplication1::drawUI(QPainter &painter)
     // 绘制天气控制按钮状态
     QColor activeColor(0, 120, 215);
     QColor inactiveColor(70, 70, 70);
+    QColor rainColor(150, 150, 200);  // 雨天按钮颜色
+    QColor snowColor(200, 200, 220);  // 雪天按钮颜色
 
     QColor normalBtnColor = (currentWeather == NOTHING) ? activeColor : inactiveColor;
-    QColor rainBtnColor = (currentWeather == RAIN) ? activeColor : inactiveColor;
-    QColor snowBtnColor = (currentWeather == SNOW) ? activeColor : inactiveColor;
+    QColor rainBtnColor = (currentWeather == RAIN) ? rainColor : inactiveColor;
+    QColor snowBtnColor = (currentWeather == SNOW) ? snowColor : inactiveColor;
 
     QColor dayBtnColor = (currentTime == TimeOfDay::Day) ? activeColor : inactiveColor;
     QColor nightBtnColor = (currentTime == TimeOfDay::Night) ? activeColor : inactiveColor;
@@ -1213,7 +1239,7 @@ void QtWidgetsApplication1::clearLane(int lane)
     for (auto it = vehicles.begin(); it != vehicles.end();)
     {
         Vehicle *v = *it;
-        if ((v->lane == lane) && (v->isBrokenDown))
+        if (v->lane == lane)
         {
             delete v;
             it = vehicles.erase(it);
@@ -1307,4 +1333,52 @@ void QtWidgetsApplication1::on_nightButton_clicked()
     currentTime = TimeOfDay::Night;
     applyWeatherToSafety();
     update();
+}
+
+void QtWidgetsApplication1::drawWeatherEffect(QPainter &painter, const QColor &backgroundColor)
+{
+    // 保存当前画笔状态
+    painter.save();
+    
+    // 设置随机数生成器
+    static std::mt19937 weatherRng(QDateTime::currentMSecsSinceEpoch());
+    static std::uniform_real_distribution<float> positionDist(0.0, 1.0);
+    static std::uniform_real_distribution<float> speedDist(0.5, 2.0);
+    
+    // 根据天气类型绘制效果
+    if (currentWeather == RAIN) {
+        // 绘制雨滴效果
+        painter.setPen(QPen(QColor(180, 180, 220, 150), 1));
+        
+        // 绘制一定数量的雨滴
+        int raindropCount = 200;
+        for (int i = 0; i < raindropCount; ++i) {
+            float x = positionDist(weatherRng) * roadWidth;
+            float y = positionDist(weatherRng) * (windowHeight - topBarHeight) + topBarHeight;
+            
+            // 添加一些动态效果
+            float speed = speedDist(weatherRng);
+            float length = 10.0f * speed;
+            
+            // 绘制雨滴（倾斜的短线）
+            painter.drawLine(x, y, x - 3, y + length);
+        }
+    }
+    else if (currentWeather == SNOW) {
+        // 绘制雪花效果
+        painter.setPen(QPen(QColor(230, 230, 230, 200), 1));
+        
+        // 绘制一定数量的雪花
+        int snowflakeCount = 150;
+        for (int i = 0; i < snowflakeCount; ++i) {
+            float x = positionDist(weatherRng) * roadWidth;
+            float y = positionDist(weatherRng) * (windowHeight - topBarHeight) + topBarHeight;
+            
+            // 绘制雪花（小圆点）
+            painter.drawEllipse(QPointF(x, y), 1.5, 1.5);
+        }
+    }
+    
+    // 恢复画笔状态
+    painter.restore();
 }
